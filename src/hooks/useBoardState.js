@@ -94,16 +94,16 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
 
     // Функция добавления нового узла
     // (boardId = 8 оставлен для теста)
-    const addNode = useCallback((type) => {
+    const addNode = useCallback((id, type) => {
         const position = { x: Math.random() * 400, y: Math.random() * 400 };
-        const { data, style } = getDefaultItem(type);
+        const { data, style, width, height } = getDefaultItem(type);
 
         const payload = {
-            boardId: 8, // тестовый вариант
-            parentId: null,
+            boardId: id,
+            // parentId: null,
             type,
             position: new Position(position),
-            geometry: new Geometry({ width: 100, height: 100, rotation: 0 }),
+            geometry: new Geometry({ width: width, height: height, rotation: 0 }),
             data: { ...data, dataType: type },
             style: { ...style, styleType: type },
         };
@@ -187,9 +187,11 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
                 console.log('[useBoardState][updateNodeFromWS] Обновляем существующий узел с id:', newNode.id);
                 const newNodes = [...prevNodes];
                 newNodes[nodeIndex] = updatedNode;
+                originalNodesRef.current[newNode.id] = updatedNode;
                 return newNodes;
             } else {
                 console.log('[useBoardState][updateNodeFromWS] Добавляем новый узел с id:', newNode.id);
+                originalNodesRef.current[newNode.id] = updatedNode;
                 return [...prevNodes, updatedNode];
             }
         });
@@ -201,7 +203,7 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
         const items = itemsData.map((raw) => ItemRs.fromServer(raw));
         const loadedNodes = items.map((item) => {
             const node = itemToNode(item);
-            return {
+            const newNode = {
                 ...node,
                 draggable: true,
                 data: {
@@ -215,6 +217,9 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
                     },
                 },
             };
+            // Сохраняем начальное состояние для сравнения
+            originalNodesRef.current[newNode.id] = newNode;
+            return newNode;
         });
 
         const loadedEdges = items
@@ -242,7 +247,20 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
     // При окончании перетаскивания узла отправляем обновлённую позицию на сервер
     const onNodeDragStop = useCallback((_, node) => {
         console.log('[useBoardState][onNodeDragStop] Узел перетащен:', node);
+        // Сравниваем позицию с предыдущей сохранённой
+        const original = originalNodesRef.current[node.id];
+        if (original) {
+            const dx = Math.abs(original.position.x - node.position.x);
+            const dy = Math.abs(original.position.y - node.position.y);
+            // Если позиция не изменилась существенно, не отправляем обновление
+            if (dx < 1 && dy < 1) {
+                console.log('[useBoardState][onNodeDragStop] Позиция не изменилась, обновление не отправляем.');
+                return;
+            }
+        }
         updateNodeOnServer(node);
+        // Обновляем сохранённое состояние
+        originalNodesRef.current[node.id] = { ...node };
         setNodes((nds) => nds.map((n) => (n.id === node.id ? { ...n, selected: false } : n)));
     }, [updateNodeOnServer, setNodes]);
 

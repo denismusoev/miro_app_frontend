@@ -71,7 +71,7 @@ export default function BoardPageDefault() {
 
     return (
         <div style={{ height: '90vh', border: '1px solid #ddd' }}>
-            <Toolbar addNode={addNode} removeLastNode={removeLastNode} />
+            <Toolbar boardId={id} addNode={addNode} removeLastNode={removeLastNode} />
             <BoardFlow
                 nodes={nodes}
                 edges={edges}
