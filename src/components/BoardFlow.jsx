@@ -8,6 +8,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import FloatingEdge from './FloatingEdge';
 import FloatingConnectionLine from './FloatingConnectionLine';
+import DevTools from "../utils/DevTools";
 import { customNodeTypes } from './CustomNodes';
 
 const edgeTypes = {
@@ -72,6 +73,7 @@ const BoardFlow = ({
             {/*<Background variant="lines" gap={150} />*/}
             <Controls />
             <MiniMap />
+            <DevTools position="top-left" />
         </ReactFlow>
     );
 };

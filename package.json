@@ -23,6 +23,7 @@
     "react-scripts": "5.0.1",
     "reactflow": "^11.11.4",
     "sockjs-client": "^1.6.1",
+    "toggle-group": "^1.0.5",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

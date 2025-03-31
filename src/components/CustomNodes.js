@@ -55,6 +55,7 @@ export const TextNode = ({ id, data, xPos, yPos, selected }) => {
     const startEditing = () => {
         setIsEditing(true);
         data.functions?.disableDragging && data.functions.disableDragging();
+        console.log("===========================================================================")
     };
 
     const finishEditing = () => {

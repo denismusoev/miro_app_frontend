@@ -1,51 +1,37 @@
 // src/pages/BoardPageDefault.jsx
 import React, { useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import useStompWebSocket from '../hooks/useWebSocket';
+import useBoardWebSocket from '../hooks/useBoardWebSocket';
 import { useBoardState } from '../hooks/useBoardState';
 import Toolbar from '../components/Toolbar';
 import BoardFlow from '../components/BoardFlow';
-
-// Опционально: выносим URL SockJS в константу:
-const WS_ENDPOINT = 'http://localhost:8080/ws';
+import './BoardPageDefault.css';
 
 export default function BoardPageDefault() {
     const { id } = useParams();
     const boardStateRef = useRef(null);
 
-    // 1. Колбэк, который вызывается, когда STOMP подключился.
-    //    Здесь можно подписаться на топик "/topic/boards/{id}"
-    //    и при получении сообщений — вызывать setBoardData / updateNodeFromWS.
-    const handleStompConnect = useCallback((client) => {
-        console.log('[BoardPageDefault] handleStompConnect - подписываемся на топик');
-        client.subscribe(`/topic/board/${id}`, (msg) => {
-            try {
-                const message = JSON.parse(msg.body);
-                console.log('[BoardPageDefault] Получили сообщение по /topic/boards:', message);
-                // Обрабатываем
-                if (message.type === 'INITIAL') {
-                    boardStateRef.current?.setBoardData(message.data);
-                } else if (message.type === 'CREATE' || message.type === 'UPDATE') {
-                    boardStateRef.current?.updateNodeFromWS(message.data);
-                } else if (message.type === 'DELETE') {
-                    boardStateRef.current?.removeNode?.(message.nodeId);
-                }
-            } catch (e) {
-                console.error('Ошибка парсинга', e);
-            }
-        });
-    }, [id]);
+    // Обработчик входящих сообщений
+    const handleMessage = useCallback((message) => {
+        console.log('[BoardPageDefault] Обработка сообщения:', message);
+        if (message.type === 'INITIAL') {
+            boardStateRef.current?.setBoardData(message.data);
+        } else if (message.type === 'CREATE' || message.type === 'UPDATE') {
+            boardStateRef.current?.updateNodeFromWS(message.data);
+        } else if (message.type === 'DELETE') {
+            boardStateRef.current?.removeNode?.(message.nodeId);
+        }
+    }, []);
 
-    // 2. Подключаемся к SockJS + STOMP
-    const {
-        stompClient,
-        connected,
-        publish,
-    } = useStompWebSocket(WS_ENDPOINT, handleStompConnect);
+    // Подключаемся к WebSocket через наш новый хук
+    const { stompClient, connected, publish } = useBoardWebSocket(id, handleMessage);
 
-    // 3. Инициируем "логику доски" (reactflow + ws), прокидывая publish и connected
+    // Инициализируем логику доски
     const boardState = useBoardState({ stompClient, publish, connected });
-    boardStateRef.current = boardState; // cохраняем в ref, чтобы вызывать методы в подписке
+    useEffect(() => {
+        boardStateRef.current = boardState;
+    }, [boardState]);
+
     const {
         nodes,
         edges,
@@ -60,8 +46,7 @@ export default function BoardPageDefault() {
         onNodeDragStop,
     } = boardState;
 
-    // 4. Когда точно connected — вызываем loadBoardData(id)
-    //    Сервер пошлёт нам INITIAL (который поймается в client.subscribe).
+    // Загружаем данные доски после установки соединения
     useEffect(() => {
         if (connected && id) {
             console.log('[BoardPageDefault] connected -> loadBoardData', id);
@@ -70,7 +55,7 @@ export default function BoardPageDefault() {
     }, [connected, id, loadBoardData]);
 
     return (
-        <div style={{ height: '90vh', border: '1px solid #ddd' }}>
+        <div className="board-page-container">
             <Toolbar boardId={id} addNode={createNewNode} removeLastNode={removeLastNode} />
             <BoardFlow
                 nodes={nodes}

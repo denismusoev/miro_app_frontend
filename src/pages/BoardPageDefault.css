@@ -1,0 +1,5 @@
+/* src/pages/BoardPageDefault.css */
+.board-page-container {
+    height: 90vh;
+    border: 1px solid #ddd;
+}
