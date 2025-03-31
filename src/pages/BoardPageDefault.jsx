@@ -54,7 +54,7 @@ export default function BoardPageDefault() {
         onConnect,
         onEdgeUpdate,
         onSelectionChange,
-        addNode,
+        createNewNode,
         removeLastNode,
         loadBoardData,
         onNodeDragStop,
@@ -71,7 +71,7 @@ export default function BoardPageDefault() {
 
     return (
         <div style={{ height: '90vh', border: '1px solid #ddd' }}>
-            <Toolbar boardId={id} addNode={addNode} removeLastNode={removeLastNode} />
+            <Toolbar boardId={id} addNode={createNewNode} removeLastNode={removeLastNode} />
             <BoardFlow
                 nodes={nodes}
                 edges={edges}

@@ -125,12 +125,12 @@ export class ShapeData extends Data {
 export class StickyNoteData extends Data {
     constructor({
                     content = "StickyNote", // дефолт "StickyNote"
-                    type = StickyNoteShapeType.SQUARE,
+                    shape = StickyNoteShapeType.SQUARE,
                     dataType = "sticky_note"
                 } = {}) {
         super({ dataType });
         this.content = content;
-        this.type = type;
+        this.shape = shape;
     }
 }
 
