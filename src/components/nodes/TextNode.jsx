@@ -1,37 +1,67 @@
-import React from 'react';
-import BaseNode from './BaseNode';
+// TextNode.js
+import React, { useState } from 'react';
+import { Handle } from 'reactflow';
+import { convertFontName, editingInputStyle } from '../../utils/nodeUtils';
 
-export const TextNode = ({ id, data, xPos, yPos, selected }) => {
-    // Можно вычислять специфичные стили и размеры для текстового узла
+export const TextNode = ({ id, data, selected }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [value, setValue] = useState(data.label || '');
+
     const computedWidth = data.geometry?.width || 150;
     const computedHeight = data.geometry?.height || 50;
+    const fontFamilyCSS = convertFontName(data.style?.fontFamily);
+
+    const startEditing = () => {
+        setIsEditing(true);
+        data.functions?.disableDragging && data.functions.disableDragging();
+    };
+
+    const finishEditing = () => {
+        data.functions?.onLabelChange && data.functions.onLabelChange(id, value);
+        setIsEditing(false);
+        data.functions?.enableDragging && data.functions.enableDragging();
+    };
+
+    const handleDoubleClick = () => startEditing();
+    const handleBlur = () => finishEditing();
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') finishEditing();
+    };
 
     const containerStyle = {
-        background: data.style?.fillColor || 'transparent',
-        fontFamily: data.style?.fontFamily || 'Arial, sans-serif',
+        width: `${computedWidth}px`,
+        height: `${computedHeight}px`,
+        background: 'transparent',
+        fontFamily: fontFamilyCSS,
         fontSize: data.style?.fontSize ? `${data.style.fontSize}px` : '18px',
         textAlign: data.style?.textAlign || 'left',
-        color: data.style?.color || '#000',
-        padding: '4px',
-        border: `2px solid ${selected ? '#6495fb' : 'transparent'}`
+        color: data.style?.color || '#333',
+        padding: '8px',
+        borderRadius: '12px',
+        boxShadow: selected
+            ? '0 4px 12px rgba(59,130,246,0.3)'
+            : '0 2px 6px rgba(0,0,0,0.1)',
+        transition: 'box-shadow 0.2s ease, border 0.2s ease',
+        border: selected ? '2px solid #3B82F6' : '2px solid transparent',
     };
 
     return (
-        <BaseNode
-            id={id}
-            data={data}
-            isSelected={selected}
-            defaultWidth={computedWidth}
-            defaultHeight={computedHeight}
-            onLabelChange={data.functions?.onLabelChange}
-            onEnableDragging={data.functions?.enableDragging}
-            onDisableDragging={data.functions?.disableDragging}
-            containerStyle={containerStyle}
-        >
-            <div>{data.label}</div>
-            <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
-                Координаты: x: {xPos?.toFixed(0)}, y: {yPos?.toFixed(0)}
-            </div>
-        </BaseNode>
+        <div onDoubleClick={handleDoubleClick} style={containerStyle}>
+            {isEditing ? (
+                <input
+                    type="text"
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    onBlur={handleBlur}
+                    onKeyDown={handleKeyDown}
+                    autoFocus
+                    style={editingInputStyle}
+                />
+            ) : (
+                <div>{value}</div>
+            )}
+            <Handle type="target" position="left" style={{ background: '#555', width: 7, height: 7 }} />
+            <Handle type="source" position="right" style={{ background: '#555', width: 7, height: 7 }} />
+        </div>
     );
 };

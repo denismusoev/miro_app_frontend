@@ -17,7 +17,7 @@ function FloatingEdge({ id, source, target, markerEnd, style }) {
     const { sx, sy, tx, ty, sourcePos, targetPos } = getEdgeParams(sourceNode, targetNode);
 
     // Формируем путь кривой Безье с помощью встроенной функции getBezierPath
-    const [edgePath] = getSmoothStepPath({
+    const [edgePath] = getBezierPath({
         sourceX: sx,
         sourceY: sy,
         sourcePosition: sourcePos,

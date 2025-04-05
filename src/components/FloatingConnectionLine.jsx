@@ -30,7 +30,7 @@ function FloatingConnectionLine({
     const { sx, sy, tx, ty, sourcePos, targetPos } = getEdgeParams(fromNode, targetNode);
 
     // Строим путь кривой Безье
-    const [edgePath] = getSmoothStepPath({
+    const [edgePath] = getBezierPath({
         sourceX: sx,
         sourceY: sy,
         sourcePosition: sourcePos || fromPosition,

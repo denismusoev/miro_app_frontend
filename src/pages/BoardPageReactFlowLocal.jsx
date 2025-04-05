@@ -13,7 +13,7 @@ import 'reactflow/dist/style.css';
 // Импортируем кастомные компоненты для плавающих краёв
 import FloatingEdge from '../components/FloatingEdge';
 import FloatingConnectionLine from '../components/FloatingConnectionLine';
-import { customNodeTypes } from '../components/CustomNodes';
+import { customNodeTypes } from '../components/nodes/CustomNodes';
 import AdjustableEdge from "../components/AdjustableEdge";
 
 const edgeTypes = {

@@ -9,9 +9,11 @@ import 'reactflow/dist/style.css';
 import FloatingEdge from './FloatingEdge';
 import FloatingConnectionLine from './FloatingConnectionLine';
 import DevTools from "../utils/DevTools";
-import { customNodeTypes } from './CustomNodes';
+import { customNodeTypes } from './nodes/CustomNodes';
+// import { ShapeNode } from './nodes/ShapeNode';
 import {useDrag} from "./nodes/DragContext";
 import {useParams} from "react-router-dom";
+import './BoardFlow.css'
 
 const edgeTypes = {
     floating: FloatingEdge,
@@ -35,7 +37,7 @@ const AdaptiveBackground = ({ threshold = 0.5 }) => {
         return () => clearInterval(interval);
     }, [getZoom, lastAppliedZoom, threshold]);
 
-    return <Background variant="lines" gap={dynamicGap} size={1} />;
+    return <Background variant="lines" gap={dynamicGap} size={1} color="#e2e2e2" />;
 };
 
 const BoardFlow = ({
@@ -47,6 +49,7 @@ const BoardFlow = ({
                        onEdgeUpdate,
                        onSelectionChange,
                        onNodeDragStop,
+                       onNodeDragStart,
                        onDropNewNode,// новый пропс
                    }) => {
     const containerWidth = window.innerWidth / 2;
@@ -109,9 +112,14 @@ const BoardFlow = ({
                 onEdgeUpdate={onEdgeUpdate}
                 onSelectionChange={onSelectionChange}
                 onNodeDragStop={onNodeDragStop}  // передаем обработчик в ReactFlow
+                // onNodeDragStart={onNodeDragStart}
                 nodeTypes={customNodeTypes}
                 edgeTypes={edgeTypes}
                 connectionLineComponent={FloatingConnectionLine}
+                selectNodesOnDrag={true}
+                elevateNodesOnSelect={true}
+                elevateEdgesOnSelect={true}
+                style={{ backgroundColor: '#f2f2f2' }}
                 // fitView
                 // defaultViewport={{ x: -containerWidth / 2, y: -containerHeight / 2, zoom: 1 }}
                 defaultViewport={{ x: containerWidth, y: containerHeight, zoom: 1 }}
@@ -124,6 +132,8 @@ const BoardFlow = ({
                     setFlowInstance(instance);
                     window.reactFlowInstance = instance;
                 }}
+                panOnDrag={[2]}
+                zoomOnDoubleClick={false}
             >
 
                 {/*<DevTools position="bottom-right" />*/}

@@ -253,7 +253,6 @@ export class TextStyle extends Style {
 export class StickyNoteStyle extends Style {
     constructor({
                     fillColor = FillColorType.WHITE,
-                    fillOpacity = FillOpacityType.OPAQUE,
                     fontSize = 14,
                     fontFamily = FontFamilyType.ARIAL,
                     textAlign = TextAlignType.CENTER,        // используем значение из enum
@@ -263,8 +262,8 @@ export class StickyNoteStyle extends Style {
         super({ styleType });
         this.fillColor = fillColor;
         this.textAlign = textAlign;
-        this.fontSize = fillColor;
-        this.fontFamily = textAlign;
+        this.fontSize = fontSize;
+        this.fontFamily = fontFamily;
         this.textAlignVertical = textAlignVertical;
     }
 }
