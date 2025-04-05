@@ -23,8 +23,8 @@ export default function NodeInspector() {
                             type={node.type || 'default'}
                             position={node.position}
                             absPosition={absPosition}
-                            width={node.measured?.width ?? 0}
-                            height={node.measured?.height ?? 0}
+                            width={node.width ?? 0}
+                            height={node.height ?? 0}
                             data={node.data}
                         />
                     );

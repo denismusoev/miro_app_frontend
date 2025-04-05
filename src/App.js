@@ -42,7 +42,8 @@ function App() {
                         element={
                             <ReactFlowProvider>
                                 <BoardPage />
-                            </ReactFlowProvider>}
+                            </ReactFlowProvider>
+                        }
                     />
                     <Route
                         path="/invite/:token"

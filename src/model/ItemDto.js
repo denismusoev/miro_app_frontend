@@ -84,14 +84,12 @@ export class FrameData extends Data {
     constructor({
                     title = "Frame", // дефолт "Frame"
                     showContent = true,
-                    type = FrameType.FREEFORM,
                     format = FrameFormatType.CUSTOM,
                     dataType = "frame"
                 } = {}) {
         super({ dataType });
         this.title = title;
         this.showContent = showContent;
-        this.type = type;
         this.format = format;
     }
 }
@@ -254,14 +252,19 @@ export class TextStyle extends Style {
 
 export class StickyNoteStyle extends Style {
     constructor({
-                    fillColor = StickyNoteFillColorType.LIGHT_YELLOW,
-                    textAlign = TextAlignType.CENTER,         // используем значение из enum
+                    fillColor = FillColorType.WHITE,
+                    fillOpacity = FillOpacityType.OPAQUE,
+                    fontSize = 14,
+                    fontFamily = FontFamilyType.ARIAL,
+                    textAlign = TextAlignType.CENTER,        // используем значение из enum
                     textAlignVertical = TextAlignVerticalType.TOP, // используем значение из enum
                     styleType = "sticky_note"
                 } = {}) {
         super({ styleType });
         this.fillColor = fillColor;
         this.textAlign = textAlign;
+        this.fontSize = fillColor;
+        this.fontFamily = textAlign;
         this.textAlignVertical = textAlignVertical;
     }
 }

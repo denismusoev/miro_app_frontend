@@ -99,10 +99,10 @@ function ProjectPage() {
     const handleSave = async () => {
         try {
             if (editMode) {
-                await updateBoard(currentBoard.id, currentBoard);
+                await updateBoard({ id: currentBoard.id, ...currentBoard });
                 setToastMessage("Доска успешно обновлена.");
             } else {
-                await createBoard(currentBoard);
+                await createBoard(projectId, currentBoard);
                 setToastMessage("Доска успешно создана.");
             }
             setShowToast(true);

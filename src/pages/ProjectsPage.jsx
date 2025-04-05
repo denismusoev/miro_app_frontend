@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useState} from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
     fetchAccessibleProjects,
     createProject,
@@ -7,7 +7,7 @@ import {
     createInvite,
     getInvite,
     updateInvite,
-    deactivateInvite  // если понадобится вызывать из фронтенда деактивацию отдельно
+    deactivateInvite
 } from "../utils/api";
 import {
     Button,
@@ -20,7 +20,7 @@ import {
     Toast
 } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import {ProjectContext} from "../components/ProjectProvider";
+import { ProjectContext } from "../components/ProjectProvider";
 
 function ProjectsPage() {
     const { setProjectId } = useContext(ProjectContext);
@@ -31,18 +31,17 @@ function ProjectsPage() {
     const [toastMessage, setToastMessage] = useState("");
     const [showModal, setShowModal] = useState(false);
     const [editMode, setEditMode] = useState(false);
-    const [currentProject, setCurrentProject] = useState({ name: "", description: "" });
+    // Используем только поля, необходимые для DTO (name и description, id для обновления)
+    const [currentProject, setCurrentProject] = useState({ id: null, name: "", description: "" });
 
     // Состояния для модального окна приглашения
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [inviteProject, setInviteProject] = useState(null);
-    // Форма для создания новой ссылки
     const [inviteForm, setInviteForm] = useState({
         role: "WRITE", // по умолчанию
         expiresAt: "",
         maxUsages: ""
     });
-    // Если активная ссылка уже есть – сохраняем её
     const [activeInvite, setActiveInvite] = useState(null);
 
     const navigate = useNavigate();
@@ -54,6 +53,7 @@ function ProjectsPage() {
     const loadProjects = async () => {
         try {
             const response = await fetchAccessibleProjects();
+            // Предполагается, что бек возвращает массив DTO ProjectRs с нужными полями
             setProjects(response.data);
             setLoading(false);
         } catch (err) {
@@ -62,7 +62,7 @@ function ProjectsPage() {
         }
     };
 
-    const handleShowModal = (project = { name: "", description: "" }) => {
+    const handleShowModal = (project = { id: null, name: "", description: "" }) => {
         setEditMode(!!project.id);
         setCurrentProject(project);
         setShowModal(true);
@@ -70,16 +70,25 @@ function ProjectsPage() {
 
     const handleCloseModal = () => {
         setShowModal(false);
-        setCurrentProject({ name: "", description: "" });
+        setCurrentProject({ id: null, name: "", description: "" });
     };
 
     const handleSave = async () => {
         try {
             if (editMode) {
-                await updateProject(currentProject.id, currentProject);
+                // Отправляем только id, name и description для обновления
+                await updateProject({
+                    id: currentProject.id,
+                    name: currentProject.name,
+                    description: currentProject.description
+                });
                 setToastMessage("Проект успешно обновлён.");
             } else {
-                await createProject(currentProject);
+                // Для создания отправляем только name и description
+                await createProject({
+                    name: currentProject.name,
+                    description: currentProject.description
+                });
                 setToastMessage("Проект успешно создан.");
             }
             setShowToast(true);
@@ -105,24 +114,21 @@ function ProjectsPage() {
         }
     };
 
-    // Открытие модального окна приглашения для проекта
+    // Модальное окно приглашения (логика без изменений)
     const handleShowInviteModal = async (project) => {
         setInviteProject(project);
-        // Сброс формы (если ссылки ещё нет)
         setInviteForm({
             role: "WRITE",
             expiresAt: "",
             maxUsages: ""
         });
-        // Сначала пытаемся получить уже существующую активную ссылку для проекта
         try {
             const response = await getInvite({ projectId: project.id, role: "WRITE" });
             if (response.data) {
                 setActiveInvite(response.data);
-                // Заполняем форму текущими параметрами
                 setInviteForm({
                     role: response.data.role,
-                    expiresAt: response.data.expiresAt ? response.data.expiresAt.substring(0,16) : "",
+                    expiresAt: response.data.expiresAt ? response.data.expiresAt.substring(0, 16) : "",
                     maxUsages: response.data.maxUsages || ""
                 });
             } else {
@@ -140,7 +146,6 @@ function ProjectsPage() {
         setActiveInvite(null);
     };
 
-    // Если активной ссылки нет – создаём её
     const handleInviteSave = async () => {
         try {
             const inviteData = {
@@ -161,7 +166,6 @@ function ProjectsPage() {
         }
     };
 
-    // Обновление уже существующей ссылки
     const handleInviteUpdate = async () => {
         try {
             const updateData = {
@@ -180,7 +184,6 @@ function ProjectsPage() {
         }
     };
 
-    // Деактивация ссылки
     const handleInviteDeactivate = async () => {
         try {
             const response = await deactivateInvite(activeInvite.token);
@@ -215,20 +218,19 @@ function ProjectsPage() {
                                     <Card.Title
                                         className="text-primary"
                                         style={{ cursor: "pointer" }}
-                                        onClick={() =>
-                                        {
+                                        onClick={() => {
                                             setProjectId(project.id);
-                                            navigate(`/project`)
+                                            navigate(`/project`);
                                         }}
                                     >
                                         {project.name}
                                     </Card.Title>
                                     <Card.Text className="text-muted">
-                                        {project.description.length > 60
+                                        {project.description && project.description.length > 60
                                             ? project.description.substring(0, 60) + "..."
                                             : project.description}
                                     </Card.Text>
-                                    { (project.accessLevel === "ADMIN" || project.accessLevel === "OWNER") && (
+                                    {(project.accessLevel === "ADMIN" || project.accessLevel === "OWNER") && (
                                         <div className="d-flex justify-content-between">
                                             <Button variant="warning" size="sm" onClick={() => handleShowModal(project)}>✏️</Button>
                                             <Button variant="info" size="sm" onClick={() => handleShowInviteModal(project)}>🔗</Button>

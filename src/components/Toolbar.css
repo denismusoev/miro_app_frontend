@@ -1,0 +1,17 @@
+/* Например, в BoardPageDefault.css или Toolbar.css */
+.toolbar-floating {
+    position: fixed; /* или absolute, если нужно вписать в контейнер */
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%); /* центрируем по горизонтали */
+    z-index: 9999;               /* чтобы панель была поверх доски */
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    gap: 12px;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    /* при желании, можно добавить полупрозрачный фон */
+    /* backdrop-filter: blur(6px); */
+}

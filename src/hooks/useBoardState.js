@@ -42,25 +42,6 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
         safePublish('/app/items/update', payload);
     }, [safePublish]);
 
-    const updateNodeLabel = useCallback((id, newLabel) => {
-        console.log('[useBoardState][updateNodeLabel] Обновление label для узла', id, 'на', newLabel);
-        setNodes((prevNodes) =>
-            prevNodes.map((node) => {
-                if (node.id !== id) return node;
-                // Применяем функцию attachNodeHandlers из utils
-                const updatedNode = attachNodeHandlers(
-                    {
-                        ...node,
-                        data: { ...node.data, label: newLabel },
-                    },
-                    { updateNodeLabel, updateNodeOnServer, removeNode, disableDragging, enableDragging }
-                );
-                // Отправляем обновление на сервер
-                updateNodeOnServer(updatedNode);
-                return updatedNode;
-            })
-        );
-    }, [setNodes, updateNodeOnServer, removeNode]);
 
     const disableDragging = useCallback((nodeId) => {
         console.log('[useBoardState][disableDragging]', nodeId);
@@ -80,8 +61,8 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
         );
     }, [setNodes]);
 
-    const createNewNode = useCallback((boardIdForNode, type) => {
-        const position = { x: Math.random() * 400, y: Math.random() * 400 };
+    const createNewNode = useCallback((boardIdForNode, type, position) => {
+        // const position = { x: Math.random() * 400, y: Math.random() * 400 };
         const { data, style, width, height } = getDefaultItem(type);
         const payload = {
             boardId: boardIdForNode,
@@ -137,6 +118,48 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
         }
     }, []);
 
+    const updateNodeLabel = useCallback((id, newLabel) => {
+        console.log('[useBoardState][updateNodeLabel] Обновление label для узла', id, 'на', newLabel);
+        setNodes((prevNodes) =>
+            prevNodes.map((node) => {
+                if (node.id !== id) return node;
+                // Применяем функцию attachNodeHandlers из utils
+                const updatedNode = attachNodeHandlers(
+                    {
+                        ...node,
+                        data: { ...node.data, label: newLabel },
+                    },
+                    { updateNodeLabel, updateNodeOnServer, removeNode, disableDragging, enableDragging, updateNodeStyle }
+                );
+                // Отправляем обновление на сервер
+                updateNodeOnServer(updatedNode);
+                return updatedNode;
+            })
+        );
+    }, [setNodes, updateNodeOnServer, removeNode, disableDragging, enableDragging]);
+
+    const updateNodeStyle = useCallback((id, newStyle) => {
+        console.log('[useBoardState][updateNodeStyle] Обновляем стиль для узла', id, newStyle);
+        setNodes((prevNodes) =>
+            prevNodes.map((node) => {
+                if (node.id !== id) return node;
+                const updatedNode = attachNodeHandlers(
+                    {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            style: { ...node.data.style, ...newStyle },
+                        },
+                    },
+                    { updateNodeLabel, updateNodeOnServer, removeNode, disableDragging, enableDragging, updateNodeStyle }
+                );
+                // Отправляем обновление на сервер
+                updateNodeOnServer(updatedNode);
+                return updatedNode;
+            })
+        );
+    }, [setNodes, updateNodeOnServer, removeNode, disableDragging, enableDragging]);
+
     const updateNodeFromWS = useCallback((item) => {
         console.log('[useBoardState][updateNodeFromWS] Пришёл item:', item);
         const newNode = itemToNode(item);
@@ -144,7 +167,7 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
             const idx = prevNodes.findIndex((n) => n.id === newNode.id);
             const nodeWithFunctions = attachNodeHandlers(
                 { ...newNode, draggable: true },
-                { updateNodeLabel, updateNodeOnServer, removeNode, disableDragging, enableDragging }
+                { updateNodeLabel, updateNodeOnServer, removeNode, disableDragging, enableDragging, updateNodeStyle }
             );
             if (idx >= 0) {
                 console.log('[useBoardState][updateNodeFromWS] Обновляем существующий узел:', newNode.id);
@@ -174,7 +197,7 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
             const baseNode = itemToNode(item);
             const nodeWithFunctions = attachNodeHandlers(
                 { ...baseNode, draggable: true },
-                { updateNodeLabel, updateNodeOnServer, removeNode, disableDragging, enableDragging }
+                { updateNodeLabel, updateNodeOnServer, removeNode, disableDragging, enableDragging, updateNodeStyle }
             );
             originalNodesRef.current[nodeWithFunctions.id] = nodeWithFunctions;
             return nodeWithFunctions;

@@ -8,7 +8,7 @@ import { useCallback } from 'react';
  * @param {boolean} isConnected - Флаг подключения
  * @param {Function} publishFn - Функция для отправки сообщения на сервер
  */
-export function useSafePublish(isConnected, publishFn) {
+    export function useSafePublish(isConnected, publishFn) {
     return useCallback((destination, body) => {
         if (!isConnected) {
             console.error('[useSafePublish] Соединение не установлено, отправка невозможна.');

@@ -33,8 +33,8 @@ export const createProject = async (project) => {
     return axios.post(`${API_BASE_URL}/projects`, project, getAuthHeaders());
 };
 
-export const updateProject = async (id, project) => {
-    return axios.put(`${API_BASE_URL}/projects/${id}`, project, getAuthHeaders());
+export const updateProject = async (project) => {
+    return axios.put(`${API_BASE_URL}/projects`, project, getAuthHeaders());
 };
 
 export const deleteProject = async (id) => {
@@ -51,15 +51,15 @@ export const fetchBoardById = async (id) => {
 };
 
 export const fetchBoardByProjectId = async (id) => {
-    return axios.get(`${API_BASE_URL}/boards/project/${id}`, getAuthHeaders());
+    return axios.get(`${API_BASE_URL}/boards/project/${id}/accessible`, getAuthHeaders());
 };
 
-export const createBoard = async (board) => {
-    return axios.post(`${API_BASE_URL}/boards`, board, getAuthHeaders());
+export const createBoard = async (projectId, board) => {
+    return axios.post(`${API_BASE_URL}/boards/${projectId}`, board, getAuthHeaders());
 };
 
-export const updateBoard = async (id, board) => {
-    return axios.put(`${API_BASE_URL}/boards/${id}`, board, getAuthHeaders());
+export const updateBoard = async (board) => {
+    return axios.put(`${API_BASE_URL}/boards`, board, getAuthHeaders());
 };
 
 export const deleteBoard = async (id) => {

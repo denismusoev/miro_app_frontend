@@ -12,7 +12,7 @@ export default function DevTools() {
 
     return (
         <div className="react-flow__devtools">
-            <Panel position="top-left">
+            <Panel position="top-right">
                 <DevToolButton
                     setActive={setNodeInspectorActive}
                     active={nodeInspectorActive}

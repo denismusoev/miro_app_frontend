@@ -22,6 +22,8 @@ export default function useStompWebSocket(sockJsUrl, onConnectCallback, options 
     useEffect(() => {
         console.log('[useStompWebSocket] MOUNT');
 
+        const token = localStorage.getItem('token');
+
         // 1) Создаём SockJS-соединение
         const socket = new SockJS(sockJsUrl);
 
@@ -29,6 +31,9 @@ export default function useStompWebSocket(sockJsUrl, onConnectCallback, options 
         const stompClient = new Client({
             webSocketFactory: () => socket,
             reconnectDelay: options.reconnectDelay ?? 5000, // авто-реконнект
+            // connectHeaders: {
+            //     Authorization: `Bearer ${token}`,
+            // },
             onConnect: (frame) => {
                 console.log('[useStompWebSocket] onConnect:', frame);
                 setConnected(true);

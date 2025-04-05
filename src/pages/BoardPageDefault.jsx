@@ -6,6 +6,7 @@ import { useBoardState } from '../hooks/useBoardState';
 import Toolbar from '../components/Toolbar';
 import BoardFlow from '../components/BoardFlow';
 import './BoardPageDefault.css';
+import {DragProvider} from "../components/nodes/DragContext";
 
 export default function BoardPageDefault() {
     const { id } = useParams();
@@ -54,19 +55,26 @@ export default function BoardPageDefault() {
         }
     }, [connected, id, loadBoardData]);
 
+    const handleDropNewNode = (nodeType, position) => {
+        createNewNode(id, nodeType, position);
+    };
+
     return (
-        <div className="board-page-container">
-            <Toolbar boardId={id} addNode={createNewNode} removeLastNode={removeLastNode} />
-            <BoardFlow
-                nodes={nodes}
-                edges={edges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                onEdgeUpdate={onEdgeUpdate}
-                onSelectionChange={onSelectionChange}
-                onNodeDragStop={onNodeDragStop}
-            />
-        </div>
+        <DragProvider>
+            <div className="board-page-container">
+                <Toolbar boardId={id} addNode={createNewNode} removeLastNode={removeLastNode} />
+                <BoardFlow
+                    nodes={nodes}
+                    edges={edges}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={onConnect}
+                    onEdgeUpdate={onEdgeUpdate}
+                    onSelectionChange={onSelectionChange}
+                    onNodeDragStop={onNodeDragStop}
+                    onDropNewNode={handleDropNewNode}
+                />
+            </div>
+        </DragProvider>
     );
 }
