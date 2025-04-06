@@ -1,6 +1,6 @@
 // src/hooks/useBoardState.js
 import { useCallback, useEffect, useState, useRef } from 'react';
-import { useNodesState, useEdgesState, addEdge, updateEdge } from 'reactflow';
+import { useNodesState, useEdgesState, addEdge, updateEdge } from '@xyflow/react';
 import { getDefaultLabel } from '../utils/boardUtils';
 import { ItemRs } from '../model/ItemDto';
 import { itemToNode, nodeToItem } from '../utils/itemMapper';

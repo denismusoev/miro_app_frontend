@@ -7,8 +7,8 @@ import ReactFlow, {
     MiniMap,
     useNodesState,
     useEdgesState,
-} from 'reactflow';
-import 'reactflow/dist/style.css';
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 
 // Импортируем кастомные компоненты для плавающих краёв
 import FloatingEdge from '../components/FloatingEdge';

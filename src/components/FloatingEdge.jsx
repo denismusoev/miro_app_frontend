@@ -1,5 +1,5 @@
 // FloatingEdge.jsx
-import {getBezierPath, getSmoothStepPath, getSimpleBezierPath, useStore} from 'reactflow';
+import {getBezierPath, getSmoothStepPath, getSimpleBezierPath, useStore} from '@xyflow/react';
 import { getEdgeParams } from '../utils/edgeUtils';
 
 function FloatingEdge({ id, source, target, markerEnd, style }) {

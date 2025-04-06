@@ -1,6 +1,6 @@
 // CardNode.js
 import React, { useState, useEffect } from 'react';
-import { Handle, Position, NodeToolbar } from 'reactflow';
+import { Handle, Position, NodeToolbar } from '@xyflow/react';
 import { editingInputStyle } from '../../utils/nodeUtils';
 
 export const CardNode = ({ id, data, selected }) => {

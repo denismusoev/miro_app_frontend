@@ -1,6 +1,6 @@
 // TextNode.js
 import React, { useState } from 'react';
-import { Handle } from 'reactflow';
+import { Handle } from '@xyflow/react';
 import { convertFontName, editingInputStyle } from '../../utils/nodeUtils';
 
 export const TextNode = ({ id, data, selected }) => {

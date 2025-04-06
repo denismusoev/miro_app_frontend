@@ -1,11 +1,12 @@
 // components/BoardFlow.js
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import ReactFlow, {
+import {
+    ReactFlow,
     Background,
     Controls,
     MiniMap, useReactFlow,
-} from 'reactflow';
-import 'reactflow/dist/style.css';
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 import FloatingEdge from './FloatingEdge';
 import FloatingConnectionLine from './FloatingConnectionLine';
 import DevTools from "../utils/DevTools";

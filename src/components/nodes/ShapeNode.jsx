@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Handle, Position, NodeToolbar } from 'reactflow';
+import {Handle, Position, NodeToolbar, NodeResizer, NodeResizeControl} from '@xyflow/react';
 import {
     FillColorType,
     FontFamilyType,
@@ -14,7 +14,8 @@ import {
     MdVerticalAlignTop,
 } from 'react-icons/md';
 import { Popover, hexToRgba, getFlexAlignByVerticalTextAlign } from '../../utils/nodeUtils';
-import {CustomFontSelect} from "../CustomFontSelect";
+import { CustomFontSelect } from '../CustomFontSelect';
+import {debounce} from "lodash";
 
 export const ShapeNode = ({ id, data, selected }) => {
     const [isEditing, setIsEditing] = useState(false);
@@ -131,7 +132,7 @@ export const ShapeNode = ({ id, data, selected }) => {
         pointerEvents: 'none',
         borderRadius: '8px',
         boxShadow: selected
-            ? '8px 8px 18px rgba(59,130,246,0.3)'
+            ? '12px 12px 30px rgba(59,130,246,0.3)'
             : '2px 2px 6px rgba(0,0,0,0.1)',
         transition: 'box-shadow 0.2s ease',
     };
@@ -153,18 +154,30 @@ export const ShapeNode = ({ id, data, selected }) => {
         boxSizing: 'border-box',
     };
 
-    // Стили для панели (toolbar)
-    const toolbarStyle = {
-        minWidth: 'auto',
-        padding: '8px 12px',
-        display: 'flex',
-        flexDirection: 'row',
-        gap: '12px',
-        fontSize: '14px',
-    };
+    const handleResize = useCallback(
+        debounce((event, newSize) => {
+            console.log(newSize);
+            data.functions?.onGeometryChange?.(id, {
+                width: newSize.width,
+                height: newSize.height,
+            });
+        }, 100),
+        [id, data.functions]
+    );
 
     return (
-        <div style={outerStyle} onDoubleClick={handleDoubleClick}>
+        <div  onDoubleClick={handleDoubleClick}>
+            {/* Компонент изменения размеров, видимый только при выделении */}
+            {/*{selected && (*/}
+                <NodeResizer
+                    color="#ff0071"
+                    isVisible={selected}
+                    minWidth={100}
+                    minHeight={30}
+                    onResize={handleResize}
+                />
+            {/*)}*/}
+
             <div style={highlightStyle} />
             <div style={innerStyle}>
                 {selected && (
@@ -177,18 +190,16 @@ export const ShapeNode = ({ id, data, selected }) => {
                             alignItems: 'center',
                             padding: '8px 12px',
                             gap: '12px',
-                            // Ширина определяется содержимым
                             minWidth: 'auto',
                         }}
                     >
-                        {/* Блок выбора шрифта (CustomFontSelect) */}
+                        {/* Блок выбора шрифта */}
                         <CustomFontSelect
                             fontFamilies={fontFamilies}
                             value={fontFamily}
                             onChange={(newFont) => handleStyleChange({ fontFamily: newFont })}
                         />
                         <div style={{ width: '1px', height: '24px', backgroundColor: '#787878', opacity: 0.3 }} />
-
                         {/* Поле для ввода размера шрифта */}
                         <input
                             type="number"
@@ -206,7 +217,6 @@ export const ShapeNode = ({ id, data, selected }) => {
                             }}
                         />
                         <div style={{ width: '1px', height: '24px', backgroundColor: '#787878', opacity: 0.3 }} />
-
                         {/* Выбор цвета через иконку */}
                         <div className="position-relative">
                             <button
@@ -240,7 +250,6 @@ export const ShapeNode = ({ id, data, selected }) => {
                             </Popover>
                         </div>
                         <div style={{ width: '1px', height: '24px', backgroundColor: '#787878', opacity: 0.3 }} />
-
                         {/* Блок настройки горизонтального выравнивания */}
                         <div className="position-relative">
                             <button
@@ -255,10 +264,7 @@ export const ShapeNode = ({ id, data, selected }) => {
                                 {textAlign === 'right' && <MdFormatAlignRight size={16} />}
                             </button>
                             <Popover isOpen={textAlignOpen} anchorRef={textAlignRef} onClose={() => setTextAlignOpen(false)}>
-                                <div
-                                    className="d-flex justify-content-around align-items-center px-2 py-1"
-                                    style={{ minWidth: '120px' }}
-                                >
+                                <div className="d-flex justify-content-around align-items-center px-2 py-1" style={{ minWidth: '120px' }}>
                                     <button
                                         className="btn btn-link p-0 text-muted"
                                         onClick={() => handleStyleChange({ textAlign: 'left' })}
@@ -284,7 +290,6 @@ export const ShapeNode = ({ id, data, selected }) => {
                             </Popover>
                         </div>
                         <div style={{ width: '1px', height: '24px', backgroundColor: '#787878', opacity: 0.3 }} />
-
                         {/* Блок настройки вертикального выравнивания */}
                         <div className="position-relative">
                             <button
@@ -292,15 +297,11 @@ export const ShapeNode = ({ id, data, selected }) => {
                                 onClick={toggleVerticalAlign}
                                 ref={verticalAlignRef}
                                 title="Vertical Align"
-                                style={{cursor: 'pointer'}}
+                                style={{ cursor: 'pointer' }}
                             >
-                                <MdVerticalAlignTop size={16}/>
+                                <MdVerticalAlignTop size={16} />
                             </button>
-                            <Popover
-                                isOpen={verticalAlignOpen}
-                                anchorRef={verticalAlignRef}
-                                onClose={() => setVerticalAlignOpen(false)}
-                            >
+                            <Popover isOpen={verticalAlignOpen} anchorRef={verticalAlignRef} onClose={() => setVerticalAlignOpen(false)}>
                                 <div
                                     style={{
                                         display: 'inline-flex',
@@ -335,13 +336,9 @@ export const ShapeNode = ({ id, data, selected }) => {
                                     </button>
                                 </div>
                             </Popover>
-
                         </div>
-
                     </NodeToolbar>
-
                 )}
-
                 {isEditing ? (
                     <input
                         type="text"
@@ -362,14 +359,7 @@ export const ShapeNode = ({ id, data, selected }) => {
                         }}
                     />
                 ) : (
-                    <span
-                        style={{
-                            width: '100%',
-                            textAlign,
-                        }}
-                    >
-            {value}
-          </span>
+                    <span style={{ width: '100%', textAlign }}>{value}</span>
                 )}
             </div>
             <Handle
@@ -401,3 +391,4 @@ export const ShapeNode = ({ id, data, selected }) => {
         </div>
     );
 };
+

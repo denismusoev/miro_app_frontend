@@ -1,5 +1,5 @@
 // edgeUtils.js
-import { Position } from 'reactflow';
+import { Position } from '@xyflow/react';
 
 // Функция для получения значений по умолчанию, если измеренные размеры отсутствуют
 // function getDefaultMeasured(node) {

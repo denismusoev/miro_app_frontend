@@ -1,6 +1,6 @@
 // src/hooks/useBoardState.js
 import { useCallback, useEffect, useState, useRef } from 'react';
-import { useNodesState, useEdgesState, addEdge, updateEdge } from 'reactflow';
+import { useNodesState, useEdgesState, addEdge, applyEdgeChanges } from '@xyflow/react';
 import { getDefaultItem } from '../utils/boardUtils';
 import { itemToNode, nodeToItem } from '../utils/itemMapper';
 import { Position, Geometry, ItemRs } from '../model/ItemDto';
@@ -102,7 +102,7 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
 
     const onEdgeUpdate = useCallback((oldEdge, newConnection) => {
         console.log('[useBoardState][onEdgeUpdate] Старое:', oldEdge, 'Новое:', newConnection);
-        setEdges((prevEdges) => updateEdge(oldEdge, newConnection, prevEdges));
+        setEdges((prevEdges) => applyEdgeChanges(oldEdge, newConnection, prevEdges));
     }, [setEdges]);
 
     const onSelectionChange = useCallback((elements) => {

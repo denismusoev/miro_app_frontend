@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { NodeToolbar, Position } from '@xyflow/react';
-// если у вас reactflow, то { NodeToolbar, Position } из 'reactflow'
+// если у вас @xyflow/react, то { NodeToolbar, Position } из '@xyflow/react'
 import { FaFillDrip, FaBorderStyle, FaFont, FaAlignLeft, FaAlignCenter, FaAlignRight } from 'react-icons/fa';
 
 import {

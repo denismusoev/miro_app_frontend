@@ -1,6 +1,6 @@
 // FloatingConnectionLine.jsx
 import React from 'react';
-import {getBezierPath, getSmoothStepPath} from 'reactflow';
+import {getBezierPath, getSmoothStepPath} from '@xyflow/react';
 import { getEdgeParams } from '../utils/edgeUtils';
 
 function FloatingConnectionLine({
