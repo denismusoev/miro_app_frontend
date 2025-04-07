@@ -9,7 +9,7 @@
  * @param {object} handlers - объект с обработчиками: { updateNodeLabel, updateNodeOnServer, removeNode, disableDragging, enableDragging }
  * @returns {object} новый узел с прикреплёнными функциями
  */
-export function attachNodeHandlers(node, { updateNodeLabel, updateNodeOnServer, removeNode, disableDragging, enableDragging, updateNodeStyle }) {
+export function attachNodeHandlers(node, { updateNodeLabel, updateNodeOnServer, removeNode, disableDragging, enableDragging, updateNodeStyle, updateNodeGeometry }) {
     return {
         ...node,
         data: {
@@ -21,7 +21,8 @@ export function attachNodeHandlers(node, { updateNodeLabel, updateNodeOnServer, 
                 removeNode,
                 disableDragging: () => disableDragging(node.id),
                 enableDragging: () => enableDragging(node.id),
-                onStyleChange: updateNodeStyle
+                onStyleChange: updateNodeStyle,
+                onGeometryChange: updateNodeGeometry
             },
         },
     };

@@ -132,7 +132,52 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
                         ...node,
                         data: { ...node.data, label: newLabel },
                     },
-                    { updateNodeLabel, updateNodeOnServer, removeNode, disableDragging, enableDragging, updateNodeStyle }
+                    {
+                        updateNodeLabel,
+                        updateNodeOnServer,
+                        removeNode,
+                        disableDragging,
+                        enableDragging,
+                        updateNodeStyle,
+                        updateNodeGeometry
+                    }
+                );
+                updateNodeOnServer(updatedNode);
+                return updatedNode;
+            })
+        );
+    }, [setNodes, updateNodeOnServer, removeNode, disableDragging, enableDragging]);
+
+    const updateNodeGeometry = useCallback((id, newSize) => {
+        console.log('[useBoardState][updateNodeLabel] Обновление size для узла', id, 'на', newSize);
+        setNodes((prevNodes) =>
+            prevNodes.map((node) => {
+                if (node.id !== id) return node;
+                // Отмечаем, что узел обновлён локально
+                pendingUpdatesRef.current.add(id);
+                const updatedNode = attachNodeHandlers(
+                    {
+                        ...node,
+                        width: newSize.width,
+                        height: newSize.height,
+                        data: {
+                            ...node.data,
+                            geometry:
+                            {
+                                width: newSize.width,
+                                height: newSize.height
+                            }
+                        },
+                    },
+                    {
+                        updateNodeLabel,
+                        updateNodeOnServer,
+                        removeNode,
+                        disableDragging,
+                        enableDragging,
+                        updateNodeStyle,
+                        updateNodeGeometry
+                    }
                 );
                 updateNodeOnServer(updatedNode);
                 return updatedNode;
@@ -155,7 +200,15 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
                             style: { ...node.data.style, ...newStyle },
                         },
                     },
-                    { updateNodeLabel, updateNodeOnServer, removeNode, disableDragging, enableDragging, updateNodeStyle }
+                    {
+                        updateNodeLabel,
+                        updateNodeOnServer,
+                        removeNode,
+                        disableDragging,
+                        enableDragging,
+                        updateNodeStyle,
+                        updateNodeGeometry
+                    }
                 );
                 updateNodeOnServer(updatedNode);
                 return { ...updatedNode, selected: node.selected };
@@ -214,7 +267,15 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
             const baseNode = itemToNode(item);
             const nodeWithFunctions = attachNodeHandlers(
                 { ...baseNode, draggable: true },
-                { updateNodeLabel, updateNodeOnServer, removeNode, disableDragging, enableDragging, updateNodeStyle }
+                {
+                    updateNodeLabel,
+                    updateNodeOnServer,
+                    removeNode,
+                    disableDragging,
+                    enableDragging,
+                    updateNodeStyle,
+                    updateNodeGeometry
+                }
             );
             originalNodesRef.current[nodeWithFunctions.id] = nodeWithFunctions;
             return nodeWithFunctions;
@@ -303,6 +364,7 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
         updateNodeFromWS,
         setBoardData,
         onNodeDragStop,
-        onNodeDragStart
+        onNodeDragStart,
+        updateNodeGeometry
     };
 };

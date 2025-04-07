@@ -131,10 +131,10 @@ export const ShapeNode = ({ id, data, selected }) => {
         inset: 0,
         pointerEvents: 'none',
         borderRadius: '8px',
-        boxShadow: selected
-            ? '12px 12px 30px rgba(59,130,246,0.3)'
-            : '2px 2px 6px rgba(0,0,0,0.1)',
-        transition: 'box-shadow 0.2s ease',
+        // boxShadow: selected
+        //     ? '12px 12px 30px rgba(59,130,246,0.3)'
+        //     : '2px 2px 6px rgba(0,0,0,0.1)',
+        // transition: 'box-shadow 0.2s ease',
     };
 
     // Стиль внутреннего контейнера узла
@@ -154,31 +154,32 @@ export const ShapeNode = ({ id, data, selected }) => {
         boxSizing: 'border-box',
     };
 
-    const handleResize = useCallback(
-        debounce((event, newSize) => {
-            console.log(newSize);
-            data.functions?.onGeometryChange?.(id, {
-                width: newSize.width,
-                height: newSize.height,
-            });
-        }, 100),
-        [id, data.functions]
-    );
-
     return (
-        <div  onDoubleClick={handleDoubleClick}>
+        <div  onDoubleClick={handleDoubleClick} >
             {/* Компонент изменения размеров, видимый только при выделении */}
-            {/*{selected && (*/}
+            <div
+                style={{
+                    position: 'absolute',
+                    top: -1,
+                    left: -1,
+                    right: -1,
+                    bottom: -1,
+                }}
+            >
                 <NodeResizer
-                    color="#ff0071"
+                    color="rgba(59,130,246)"
                     isVisible={selected}
-                    minWidth={100}
-                    minHeight={30}
-                    onResize={handleResize}
+                    onResizeEnd={(e, newSize) => {
+                        console.log(newSize);
+                        data.functions?.onGeometryChange?.(id, {
+                            width: newSize.width,
+                            height: newSize.height,
+                        });
+                    }}
                 />
-            {/*)}*/}
+            </div>
 
-            <div style={highlightStyle} />
+            {/*<div style={highlightStyle} />*/}
             <div style={innerStyle}>
                 {selected && (
                     <NodeToolbar

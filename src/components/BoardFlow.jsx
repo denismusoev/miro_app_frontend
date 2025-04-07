@@ -23,13 +23,13 @@ const edgeTypes = {
 const AdaptiveBackground = ({ threshold = 0.5 }) => {
     const { getZoom } = useReactFlow();
     const [lastAppliedZoom, setLastAppliedZoom] = useState(1);
-    const [dynamicGap, setDynamicGap] = useState(100); // базовый размер сетки
+    const [dynamicGap, setDynamicGap] = useState(70); // базовый размер сетки
 
     useEffect(() => {
         const interval = setInterval(() => {
             const currentZoom = getZoom();
             if (Math.abs(currentZoom - lastAppliedZoom) > threshold) {
-                const newGap = Math.max(20, 100 / currentZoom);
+                const newGap = Math.max(10, 70 / currentZoom);
                 setDynamicGap(newGap);
                 setLastAppliedZoom(currentZoom);
             }
@@ -38,7 +38,7 @@ const AdaptiveBackground = ({ threshold = 0.5 }) => {
         return () => clearInterval(interval);
     }, [getZoom, lastAppliedZoom, threshold]);
 
-    return <Background variant="lines" gap={dynamicGap} size={1} color="#e2e2e2" />;
+    return <Background variant="lines" gap={dynamicGap} size={2} color="#e2e2e2" />;
 };
 
 const BoardFlow = ({
