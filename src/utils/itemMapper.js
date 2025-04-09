@@ -1,5 +1,4 @@
 import { ItemRs} from '../model/ItemDto';
-import { ItemCreateRq } from '../model/ItemCreateRq';
 
 /**
  * Преобразует объект ItemRs (с сервера) в объект Node для React Flow.
@@ -135,17 +134,3 @@ export const nodeToItem = (node) => {
         type,
     };
 };
-
-export const toCreateItem = ({boardId, parentId, position, geometry, type}) => {
-    return new ItemCreateRq({
-        position: {
-            ...position,
-            x: position.x + geometry.width / 2,
-            y: position.y + geometry.height / 2,
-        },
-        boardId: boardId,
-        parentId: parentId,
-        type: type
-    });
-};
-

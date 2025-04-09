@@ -6,7 +6,7 @@ import {
     TextAlignType,
 } from '../../model/Enums'; // ← тут используем ваши перечисления
 import { Popover, hexToRgba } from '../../utils/nodeUtils'; // предположим, что у вас есть эти утилиты
-import { CustomFontSelect } from '../CustomFontSelect';      // компонент-выбор шрифта (как в ShapeNode)
+// import { CustomFontSelect } from '../CustomFontSelect';      // компонент-выбор шрифта (как в ShapeNode)
 import { FaFillDrip } from 'react-icons/fa';
 import { MdFormatAlignLeft, MdFormatAlignCenter, MdFormatAlignRight, MdFormatColorText } from 'react-icons/md';
 import { MdOpacity } from 'react-icons/md';
@@ -196,11 +196,11 @@ export const TextNode = ({ id, data, selected }) => {
                     }}
                 >
                     {/* 1. Выбор шрифта */}
-                    <CustomFontSelect
+                    {/* <CustomFontSelect
                         fontFamilies={fontFamilies}
                         value={fontFamily}
                         onChange={(newFont) => handleStyleChange({ fontFamily: newFont })}
-                    />
+                    /> */}
 
                     {/* Разделитель */}
                     <div

@@ -62,6 +62,8 @@ export default function BoardPageDefault() {
         loadBoardData,
         loadConnectorData,
         onNodeDragStop,
+        onEdgesDelete,
+        onNodesDelete,
     } = boardState;
 
     // Загружаем данные доски после установки соединения
@@ -91,6 +93,8 @@ export default function BoardPageDefault() {
                     onSelectionChange={onSelectionChange}
                     onNodeDragStop={onNodeDragStop}
                     onDropNewNode={handleDropNewNode}
+                    onEdgesDelete={onEdgesDelete}
+                    onNodesDelete={onNodesDelete}
                 />
             </div>
         </DragProvider>

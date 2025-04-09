@@ -51,6 +51,8 @@ const BoardFlow = ({
                        onNodeDragStop,
                        onNodeDragStart,
                        onDropNewNode,// новый пропс
+                       onEdgesDelete,
+                       onNodesDelete,
                    }) => {
     const containerWidth = window.innerWidth / 2;
     const containerHeight = window.innerHeight / 2;
@@ -111,6 +113,8 @@ const BoardFlow = ({
                 onConnect={onConnect}
                 onEdgeUpdate={onEdgeUpdate}
                 onSelectionChange={onSelectionChange}
+                onEdgesDelete={onEdgesDelete}
+                onNodesDelete={onNodesDelete}
                 // onNodeDragStop={onNodeDragStop}  // передаем обработчик в ReactFlow
                 onNodeDrag={onNodeDragStop}  // передаем обработчик в ReactFlow
                 // onNodeDragStart={onNodeDragStart}
@@ -120,6 +124,7 @@ const BoardFlow = ({
                 selectNodesOnDrag={true}
                 elevateNodesOnSelect={true}
                 elevateEdgesOnSelect={true}
+                deleteKeyCode={['Delete', 'Backspace']}  // Разрешаем удаление по клавишам Delete и Backspace
                 style={{ backgroundColor: '#f2f2f2' }}
                 fitView
                 // defaultViewport={{ x: containerWidth, y: containerHeight, zoom: 1 }}

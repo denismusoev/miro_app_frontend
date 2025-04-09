@@ -101,6 +101,40 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
     }, [safePublish]);
 
     /**
+     * Обработчик события удаления рёбер в React Flow
+     * Вызывается, когда пользователь удаляет рёбра через интерфейс
+     */
+    const onEdgesDelete = useCallback((edgesToDelete) => {
+        console.log('[useBoardState][onEdgesDelete] Удаление рёбер:', edgesToDelete);
+        edgesToDelete.forEach((edge) => {
+            // Преобразуем ID из строки в число для отправки на сервер
+            const connectorId = parseInt(edge.id, 10);
+            if (!isNaN(connectorId)) {
+                pendingUpdatesConnectorsRef.current.add(connectorId);
+                deleteConnectorOnServer(connectorId);
+            }
+        });
+    }, [deleteConnectorOnServer]);
+
+    /**
+     * Обработчик события удаления узлов в React Flow
+     * Вызывается, когда пользователь удаляет узлы через интерфейс
+     */
+    const onNodesDelete = useCallback((nodesToDelete) => {
+        console.log('[useBoardState][onNodesDelete] Удаление узлов:', nodesToDelete);
+        nodesToDelete.forEach((node) => {
+        console.log('[useBoardState][onNodesDelete] Удаление узла:', node.id);
+            // Отправляем запрос на удаление узла на сервер
+            const nodeId = node.id;
+            if (nodeId) {
+                pendingUpdatesRef.current.add(nodeId);
+                // Используем существующую функцию removeNode, которая отправляет запрос на сервер
+                safePublish('/app/items/delete', nodeId);
+            }
+        });
+    }, [safePublish]);
+
+    /**
      * Пример обновления коннектора
      */
     const updateConnectorOnServer = useCallback((connector) => {
@@ -490,27 +524,7 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
             )
         );
     }, [setNodes]);
-
-
-    useEffect(() => {
-        function handleDeleteKey(e) {
-            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElements.length > 0) {
-                //console.log('[useBoardState][handleDeleteKey] Удаление элементов:', selectedElements);
-                const selectedEdgesIds = selectedElements
-                    .filter((el) => el.source && el.target)
-                    .map((edge) => edge.id);
-                if (selectedEdgesIds.length > 0) {
-                    //console.log('[useBoardState][handleDeleteKey] Удаляем рёбра:', selectedEdgesIds);
-                    setEdges((prevEdges) =>
-                        prevEdges.filter((edge) => !selectedEdgesIds.includes(edge.id))
-                    );
-                }
-            }
-        }
-        document.addEventListener('keydown', handleDeleteKey);
-        return () => document.removeEventListener('keydown', handleDeleteKey);
-    }, [selectedElements, setEdges]);
-
+    
     return {
         nodes,
         edges,
@@ -534,6 +548,8 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
         createConnector,
         deleteConnectorOnServer,
         updateConnectorOnServer,
-        loadConnectorData
+        loadConnectorData,
+        onEdgesDelete,
+        onNodesDelete
     };
 };
