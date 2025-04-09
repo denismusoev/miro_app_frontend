@@ -1,69 +1,118 @@
 import React, { useState } from 'react';
-import { Handle, Position } from '@xyflow/react';
+import { Handle, Position, NodeResizer } from '@xyflow/react';
 
-const BaseNode = ({
-                      id,
-                      data,
-                      isSelected,
-                      defaultWidth = 150,
-                      defaultHeight = 50,
-                      children,
-                      onLabelChange,
-                      onEnableDragging,
-                      onDisableDragging,
-                      containerStyle = {}
-                  }) => {
+export const BaseNode = ({ id, data, selected, children }) => {
+    // Редактирование лейбла (общая логика для всех)
     const [isEditing, setIsEditing] = useState(false);
     const [value, setValue] = useState(data.label || '');
 
+    // Начать/завершить редактирование
     const startEditing = () => {
         setIsEditing(true);
-        onDisableDragging && onDisableDragging();
+        data.functions?.disableDragging?.();
     };
-
     const finishEditing = () => {
-        onLabelChange && onLabelChange(id, value);
+        data.functions?.onLabelChange?.(id, value);
         setIsEditing(false);
-        onEnableDragging && onEnableDragging();
+        data.functions?.enableDragging?.();
     };
 
+    const handleDoubleClick = () => startEditing();
+    const handleBlur = () => finishEditing();
     const handleKeyDown = (e) => {
-        if (e.key === 'Enter') finishEditing();
+        if (e.key === 'Enter') {
+            finishEditing();
+        }
+    };
+
+    // Обработчик изменения размеров
+    const onResize = (e, newSize) => {
+        // console.log("ОБРАБОТЧИК ИЗМЕНЕНИЯ РАЗМЕРА")
+        // console.log("НОВЫЙ РАЗМЕР", newSize.width, newSize.height);
+        // console.log("СПИСОК ФУНКЦИЙ",  data.functions);
+        // console.log("ФУНКЦИЯ onGeometryChange", data.functions?.onGeometryChange);
+        data.functions?.onGeometryChange?.(id, {
+            width: newSize.width,
+            height: newSize.height,
+        });
+    };
+
+    // Прописываем стили, общие для всех нод (при желании можно варьировать)
+    const containerStyle = {
+        width: data.geometry?.width || 120,
+        height: data.geometry?.height || 80,
     };
 
     return (
-        <div
-            onDoubleClick={startEditing}
-            style={{
-                width: defaultWidth,
-                height: defaultHeight,
-                border: isSelected ? '2px solid blue' : 'none',
-                ...containerStyle
-            }}
-        >
+        <div style={containerStyle} onDoubleClick={handleDoubleClick}>
+            {/* Блок, отвечающий за возможность ресайза (общий для любых нод) */}
+            <div
+                style={{
+                    position: 'absolute',
+                    top: -5,
+                    left: -5,
+                    right: -5,
+                    bottom: -5,
+                }}
+            >
+                <NodeResizer
+                    lineStyle={{ borderWidth: '1px' }}
+                    color="rgba(59,130,246)"
+                    isVisible={selected}
+                    onResize={onResize}
+                />
+            </div>
+
+            {/* Если не редактируем, то отрисовываем children,
+          иначе – поле ввода */}
             {isEditing ? (
                 <input
-                    autoFocus
+                    type="text"
                     value={value}
+                    autoFocus
                     onChange={(e) => setValue(e.target.value)}
-                    onBlur={finishEditing}
+                    onBlur={handleBlur}
                     onKeyDown={handleKeyDown}
                     style={{
                         width: '100%',
+                        height: '100%',
+                        outline: 'none',
                         border: 'none',
-                        backgroundColor: 'transparent',
-                        outline: 'none'
+                        background: 'transparent',
+                        cursor: 'text',
                     }}
                 />
             ) : (
-                // Если не задан custom content через children, выводим значение по умолчанию
-                children || <div>{value}</div>
+                children
             )}
-            {/* Рендерим базовые точки для соединения */}
-            <Handle type="target" position={Position.Left} style={{ background: '#555', width: 7, height: 7 }} />
-            <Handle type="source" position={Position.Right} style={{ background: '#555', width: 7, height: 7 }} />
+
+            {/* Хендлы (общие, если у всех нод одинаковые входы-выходы) */}
+            <Handle
+                type="target"
+                position={Position.Left}
+                style={{
+                    background: selected ? '#3b82f6' : 'transparent',
+                    width: selected ? 10 : 7,
+                    height: selected ? 10 : 7,
+                    border: selected ? '2px solid #fff' : 'none',
+                    boxShadow: selected ? '0 2px 4px rgba(0, 0, 0, 0.15)' : 'none',
+                    opacity: selected ? 1 : 0,
+                    pointerEvents: selected ? 'auto' : 'none',
+                }}
+            />
+            <Handle
+                type="source"
+                position={Position.Right}
+                style={{
+                    background: selected ? '#3b82f6' : 'transparent',
+                    width: selected ? 10 : 7,
+                    height: selected ? 10 : 7,
+                    border: selected ? '2px solid #fff' : 'none',
+                    boxShadow: selected ? '0 2px 4px rgba(0, 0, 0, 0.15)' : 'none',
+                    opacity: selected ? 1 : 0,
+                    pointerEvents: selected ? 'auto' : 'none',
+                }}
+            />
         </div>
     );
 };
-
-export default BaseNode;

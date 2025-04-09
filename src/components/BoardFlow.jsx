@@ -9,7 +9,6 @@ import {
 import '@xyflow/react/dist/style.css';
 import FloatingEdge from './FloatingEdge';
 import FloatingConnectionLine from './FloatingConnectionLine';
-import DevTools from "../utils/DevTools";
 import { customNodeTypes } from './nodes/CustomNodes';
 // import { ShapeNode } from './nodes/ShapeNode';
 import {useDrag} from "./nodes/DragContext";
@@ -69,11 +68,11 @@ const BoardFlow = ({
 
     const onDrop = useCallback(
         (event) => {
-            console.log("ДРОП");
+            //console.log("ДРОП");
             event.preventDefault();
 
-            console.log(type);
-            console.log(flowInstance);
+            //console.log(type);
+            //console.log(flowInstance);
 
             if (!type || !flowInstance) {
                 return;
@@ -85,9 +84,9 @@ const BoardFlow = ({
                 y: event.clientY,
             });
 
-            console.log(onDropNewNode);
+            //console.log(onDropNewNode);
             if (onDropNewNode) {
-                console.log("ВЫЗЫВАЕМ ФУНКЦИЮ ДОБАВЛЕНИЯ");
+                //console.log("ВЫЗЫВАЕМ ФУНКЦИЮ ДОБАВЛЕНИЯ");
                 onDropNewNode(type, dropPosition);
             }
             setType(null);
@@ -112,7 +111,8 @@ const BoardFlow = ({
                 onConnect={onConnect}
                 onEdgeUpdate={onEdgeUpdate}
                 onSelectionChange={onSelectionChange}
-                onNodeDragStop={onNodeDragStop}  // передаем обработчик в ReactFlow
+                // onNodeDragStop={onNodeDragStop}  // передаем обработчик в ReactFlow
+                onNodeDrag={onNodeDragStop}  // передаем обработчик в ReactFlow
                 // onNodeDragStart={onNodeDragStart}
                 nodeTypes={customNodeTypes}
                 edgeTypes={edgeTypes}
@@ -121,15 +121,14 @@ const BoardFlow = ({
                 elevateNodesOnSelect={true}
                 elevateEdgesOnSelect={true}
                 style={{ backgroundColor: '#f2f2f2' }}
-                // fitView
-                // defaultViewport={{ x: -containerWidth / 2, y: -containerHeight / 2, zoom: 1 }}
-                defaultViewport={{ x: containerWidth, y: containerHeight, zoom: 1 }}
-                snapToGrid={false}
+                fitView
+                // defaultViewport={{ x: containerWidth, y: containerHeight, zoom: 1 }}
+                snapToGrid={true}
                 minZoom={0.2}  // минимальный масштаб
                 maxZoom={10}
                 proOptions={{ hideAttribution: true }}
                 onInit={(instance) => {
-                    console.log("ReactFlow instance loaded:", instance);
+                    //console.log("ReactFlow instance loaded:", instance);
                     setFlowInstance(instance);
                     window.reactFlowInstance = instance;
                 }}

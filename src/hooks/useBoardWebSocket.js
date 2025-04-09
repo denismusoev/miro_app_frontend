@@ -1,8 +1,9 @@
 // src/hooks/useBoardWebSocket.js
 import { useCallback } from 'react';
-import useStompWebSocket from './useWebSocket';
+import useStompWebSocket from './useStompWebSocket';
 
 const WS_ENDPOINT = 'http://localhost:8080/ws';
+const TOPIC_ENDPOINT = '/topic/board/';
 
 /**
  * Хук для подключения к WebSocket и подписки на топик доски.
@@ -12,12 +13,12 @@ const WS_ENDPOINT = 'http://localhost:8080/ws';
  */
 export default function useBoardWebSocket(boardId, onMessage) {
     const handleStompConnect = useCallback((client) => {
-        const topic = `/topic/board/${boardId}`;
-        console.log(`[useBoardWebSocket] Подписка на топик ${topic}`);
+        const topic = TOPIC_ENDPOINT + boardId;
+        //console.log(`[useBoardWebSocket] Подписка на топик ${topic}`);
         client.subscribe(topic, (msg) => {
             try {
                 const message = JSON.parse(msg.body);
-                console.log('[useBoardWebSocket] Получено сообщение:', message);
+                //console.log('[useBoardWebSocket] Получено сообщение:', message);
                 onMessage(message);
             } catch (error) {
                 console.error('[useBoardWebSocket] Ошибка парсинга сообщения', error);

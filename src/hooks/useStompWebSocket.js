@@ -20,7 +20,7 @@ export default function useStompWebSocket(sockJsUrl, onConnectCallback, options 
     const clientRef = useRef(null);
 
     useEffect(() => {
-        console.log('[useStompWebSocket] MOUNT');
+        //console.log('[useStompWebSocket] MOUNT');
 
         const token = localStorage.getItem('token');
 
@@ -35,7 +35,7 @@ export default function useStompWebSocket(sockJsUrl, onConnectCallback, options 
             //     Authorization: `Bearer ${token}`,
             // },
             onConnect: (frame) => {
-                console.log('[useStompWebSocket] onConnect:', frame);
+                //console.log('[useStompWebSocket] onConnect:', frame);
                 setConnected(true);
                 // даём возможность вызвать дополнительную логику, например подписки
                 if (onConnectCallback) {
@@ -46,7 +46,7 @@ export default function useStompWebSocket(sockJsUrl, onConnectCallback, options 
                 console.error('[useStompWebSocket] STOMP error:', frame.headers['message']);
             },
             onDisconnect: () => {
-                console.log('[useStompWebSocket] STOMP disconnected');
+                //console.log('[useStompWebSocket] STOMP disconnected');
                 setConnected(false);
             },
             debug: (str) => {
@@ -60,7 +60,7 @@ export default function useStompWebSocket(sockJsUrl, onConnectCallback, options 
 
         // 3) Очистка при размонтировании
         return () => {
-            console.log('[useStompWebSocket] UNMOUNT → deactivate()');
+            //console.log('[useStompWebSocket] UNMOUNT → deactivate()');
             setConnected(false);
             stompClient.deactivate();
         };
@@ -70,10 +70,10 @@ export default function useStompWebSocket(sockJsUrl, onConnectCallback, options 
      * Функция publish с проверкой, что клиент подключён.
      */
     const publish = useCallback((destination, body) => {
-        if (!connected) {
-            console.warn('[useStompWebSocket] Попытка publish, но нет соединения');
-            return;
-        }
+        // if (!connected) {
+        //     console.warn('[useStompWebSocket] Попытка publish, но нет соединения');
+        //     return;
+        // }
         clientRef.current.publish({
             destination,
             body: JSON.stringify(body || {}),

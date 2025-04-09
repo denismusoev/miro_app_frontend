@@ -1,6 +1,5 @@
 // utils/boardUtils.js
 import {
-    AppCardData, AppCardStyle,
     CardData, CardStyle,
     FrameData,
     FrameStyle,
@@ -24,8 +23,6 @@ export const getDefaultLabel = (type, id) => {
             return `Фигура ${id}`;
         case 'card':
             return `Карточка ${id}`;
-        case 'app_card':
-            return `Приложение ${id}`;
         case 'sticky_note':
             return `Стикер ${id}`;
         default:
@@ -45,8 +42,6 @@ export const getDefaultItem = (type) => {
             return { data: new ShapeData(), style: new ShapeStyle(), width: 300, height: 300 };
         case 'card':
             return { data: new CardData(), style: new CardStyle(), width: 300, height: 300 };
-        case 'app_card':
-            return { data: new AppCardData(), style: new AppCardStyle(), width: 300, height: 300 };
         case 'sticky_note':
             return { data: new StickyNoteData(), style: new StickyNoteStyle(), width: 300, height: 300 };
         default:

@@ -1,40 +1,5 @@
-// src/utils/itemMapper.js
-
-import {FrameData, FrameStyle, ItemRs, TextData, TextStyle} from '../model/ItemDto';
+import { ItemRs} from '../model/ItemDto';
 import { ItemCreateRq } from '../model/ItemCreateRq';
-import { ItemUpdateRq } from '../model/ItemUpdateRq';
-
-// СТАРЫЙ КОД
-// ===================================================================================================
-/**
- * Преобразует объект ItemRs (с сервера) в объект Node для React Flow.
- * При этом копируются все поля data, но в data добавляется (или перезаписывается) поле label:
- * - Для элементов типов app_card, card, frame, image: label = data.title
- * - Для элементов типов shape, sticky_note, text: label = data.content
- */
-
-// export const itemRsToNode = (itemRs) => {
-//     const { id, type, boardId, parentId, position, geometry, style, data } = itemRs;
-//     let label = '';
-//     if (['app_card', 'card', 'frame', 'image'].includes(type)) {
-//         label = data.title || '';
-//     } else if (['shape', 'sticky_note', 'text'].includes(type)) {
-//         label = data.content || '';
-//     }
-//     // Копируем все данные и добавляем/заменяем поле label
-//     const nodeData = { ...data, label, style };
-//     return {
-//         id: id.toString(),
-//         type,
-//         boardId,
-//         parentId,
-//         position: { x: position.x, y: position.y },
-//         geometry,
-//         style,
-//         data: nodeData,
-//     };
-// };
-// ===================================================================================================
 
 /**
  * Преобразует объект ItemRs (с сервера) в объект Node для React Flow.
@@ -71,9 +36,9 @@ import { ItemUpdateRq } from '../model/ItemUpdateRq';
  * }
  */
 export const itemToNode = (item) => {
-    console.log("[itemMapper][itemToNode] Пришедшие данные с сервера перед мыаппингом", item);
+    //console.log("[itemMapper][itemToNode] Пришедшие данные с сервера перед мыаппингом", item);
     const itemRs = new ItemRs(item);
-    console.log("[itemMapper][itemToNode] Созданная модель ItemRs", itemRs);
+    //console.log("[itemMapper][itemToNode] Созданная модель ItemRs", itemRs);
     const { id, type, boardId, parentId, position, geometry, style, data } = itemRs;
     let label = '';
     // Сохраняем копию остальных полей из data
@@ -109,39 +74,6 @@ export const itemToNode = (item) => {
         data: nodeData
     };
 };
-
-// СТАРЫЙ КОД
-// ===================================================================================================
-/**
- * Преобразует объект Node (React Flow) в объект, пригодный для отправки на сервер (ItemRs).
- * При этом в data заменяется поле label на:
- * - title, если тип: app_card, card, frame, image
- * - content, если тип: shape, sticky_note, text
- * Остальные поля data остаются без изменений.
- */
-// export const nodeToItemRs = (node) => {
-//     const { id, type, boardId, parentId, position, geometry, style, data } = node;
-//     // Создаем копию data
-//     const mappedData = { ...data };
-//     if (['app_card', 'card', 'frame', 'image'].includes(type)) {
-//         mappedData.title = data.label;
-//         delete mappedData.label;
-//     } else if (['shape', 'sticky_note', 'text'].includes(type)) {
-//         mappedData.content = data.label;
-//         delete mappedData.label;
-//     }
-//     return {
-//         id,
-//         boardId,
-//         parentId,
-//         type,
-//         position,
-//         geometry,
-//         style,
-//         data: mappedData,
-//     };
-// };
-// ===================================================================================================
 
 /**
  * Преобразует объект Node (React Flow) в объект ItemRs для отправки на сервер.

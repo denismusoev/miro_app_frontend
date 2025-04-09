@@ -214,7 +214,7 @@ function BoardPageReactFlow() {
             connectHeaders: { Authorization: `Bearer ${token}` },
             onConnect: () => {
                 connectedRef.current = true;
-                console.log("🔗 Подключено к WebSocket");
+                //console.log("🔗 Подключено к WebSocket");
                 // Подписываемся на топик доски и обрабатываем сообщения
                 stompClient.subscribe(`/topic/board/${boardId}`, (message) => {
                     const updatedItem = JSON.parse(message.body);

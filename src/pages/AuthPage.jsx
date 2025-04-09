@@ -21,7 +21,7 @@ function AuthPage({ onLogin }) {
         try {
             const endpoint = isRegister ? "/register" : "/login";
             const response = await axios.post(`${API_URL}${endpoint}`, formData);
-            console.log(response);
+            //console.log(response);
 
             if (!isRegister) {
                 localStorage.setItem("token", response.data.token); // Сохраняем JWT

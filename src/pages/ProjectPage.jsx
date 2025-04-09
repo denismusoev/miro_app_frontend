@@ -64,7 +64,7 @@ function ProjectPage() {
         const codeParam = urlParams.get("code");
 
         if (codeParam) {
-            console.log("Получен code из Miro:", codeParam);
+            //console.log("Получен code из Miro:", codeParam);
             handleMiroCallback(codeParam);
             window.history.replaceState(null, "", window.location.pathname);
         }
@@ -159,7 +159,7 @@ function ProjectPage() {
                 throw new Error(`Ошибка сервера: ${response.status}`);
             }
             const data = await response.json();
-            console.log("Список досок от бэкенда:", data);
+            //console.log("Список досок от бэкенда:", data);
             setMiroBoards(data);
 
             // Показываем модальное окно с Miro-досками
@@ -207,7 +207,7 @@ function ProjectPage() {
                 throw new Error(`Ошибка при импорте: ${response.status}`);
             }
             const data = await response.json();
-            console.log("Результат импорта досок:", data);
+            //console.log("Результат импорта досок:", data);
 
             alert("Импорт досок завершён успешно!");
             setShowMiroModal(false);

@@ -14,13 +14,29 @@ export default function BoardPageDefault() {
 
     // Обработчик входящих сообщений
     const handleMessage = useCallback((message) => {
-        console.log('[BoardPageDefault] Обработка сообщения:', message);
-        if (message.type === 'INITIAL') {
-            boardStateRef.current?.setBoardData(message.data);
-        } else if (message.type === 'CREATE' || message.type === 'UPDATE') {
-            boardStateRef.current?.updateNodeFromWS(message.data);
-        } else if (message.type === 'DELETE') {
-            boardStateRef.current?.removeNode?.(message.nodeId);
+        //console.log('[BoardPageDefault] handleMessage:', message);
+
+        switch (message.type) {
+            case 'INITIAL_DATA':
+                boardStateRef.current?.setBoardData(message.data);
+                break;
+            case 'CREATE_ITEM':
+            case 'UPDATE_ITEM':
+                boardStateRef.current?.updateNodeFromWS(message.data);
+                break;
+            case 'DELETE_ITEM':
+                boardStateRef.current?.removeNode?.(message.itemId);
+                break;
+            case 'CREATE_CONNECTOR':
+            case 'UPDATE_CONNECTOR':
+                boardStateRef.current?.addOrUpdateConnector(message.data);
+                break;
+            case 'DELETE_CONNECTOR':
+                boardStateRef.current?.removeConnector(message.connectorId);
+                break;
+            default:
+                console.warn('Неизвестный тип сообщения:', message.type);
+                break;
         }
     }, []);
 
@@ -44,14 +60,16 @@ export default function BoardPageDefault() {
         createNewNode,
         removeLastNode,
         loadBoardData,
+        loadConnectorData,
         onNodeDragStop,
     } = boardState;
 
     // Загружаем данные доски после установки соединения
     useEffect(() => {
         if (connected && id) {
-            console.log('[BoardPageDefault] connected -> loadBoardData', id);
+            //console.log('[BoardPageDefault] connected -> loadBoardData', id);
             loadBoardData(id);
+            loadConnectorData(id);
         }
     }, [connected, id, loadBoardData]);
 

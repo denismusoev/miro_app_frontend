@@ -5,7 +5,7 @@ import { FaFillDrip, FaBorderStyle, FaFont, FaAlignLeft, FaAlignCenter, FaAlignR
 
 import {
     BorderStyleType,
-    FillColorType,
+    ColorType,
     FillOpacityType,
     FontFamilyType,
     TextAlignType,
@@ -14,23 +14,23 @@ import {
 
 // Пример палитры для заливки и границы
 const fillColorOptions = [
-    FillColorType.WHITE,
-    FillColorType.F5F6F8,
-    FillColorType.FFF9B1,
-    FillColorType.N23BFE7,
-    FillColorType.N93D275,
-    FillColorType.F16C7F,
-    FillColorType.BLACK,
+    ColorType.WHITE,
+    ColorType.F5F6F8,
+    ColorType.FFF9B1,
+    ColorType.N23BFE7,
+    ColorType.N93D275,
+    ColorType.F16C7F,
+    ColorType.BLACK,
 ];
 
 // Пример палитры для текста
 const textColorOptions = [
-    FillColorType.BLACK,
-    FillColorType.F5F6F8,
-    FillColorType.FFF9B1,
-    FillColorType.N23BFE7,
-    FillColorType.N93D275,
-    FillColorType.F16C7F,
+    ColorType.BLACK,
+    ColorType.F5F6F8,
+    ColorType.FFF9B1,
+    ColorType.N23BFE7,
+    ColorType.N93D275,
+    ColorType.F16C7F,
 ];
 
 // Пример вариантов семейства шрифтов (FontFamilyType)
@@ -77,7 +77,7 @@ function NodeWithShapePanel({ data }) {
         borderStyle = BorderStyleType.NORMAL,
         borderWidth = 2,
         color = '#1a1a1a',
-        fillColor = FillColorType.WHITE,
+        fillColor = ColorType.WHITE,
         fillOpacity = FillOpacityType.OPAQUE,
         fontSize = 14,
         fontFamily = FontFamilyType.ARIAL,

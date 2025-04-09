@@ -21,9 +21,9 @@ const MiroAuth = () => {
         const code = urlParams.get('code');
 
         if (code) {
-            console.log('Получен code:', code);
+            //console.log('Получен code:', code);
             const userToken = getUserToken();
-            console.log("userToken:", userToken);
+            //console.log("userToken:", userToken);
 
             // Отправляем код на наш сервер вместе с токеном пользователя
             fetch(`${BACKEND_URL}/miro/exchange-code`, {
@@ -41,7 +41,7 @@ const MiroAuth = () => {
                     return response.json();
                 })
                 .then(data => {
-                    console.log('Список досок от бэкенда:', data);
+                    //console.log('Список досок от бэкенда:', data);
                     setBoards(data);
                     // Показываем модальное окно, если есть доски
                     if (data && data.length > 0) {
@@ -102,7 +102,7 @@ const MiroAuth = () => {
                 return response.json();
             })
             .then(data => {
-                console.log('Результат импорта досок:', data);
+                //console.log('Результат импорта досок:', data);
                 alert('Импорт досок завершён успешно!');
                 // Можно закрыть модальное окно, очистить выбор и т.д.
                 setShowModal(false);

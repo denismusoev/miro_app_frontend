@@ -59,7 +59,7 @@ export function useBoardItems(boardId, token) {
                 Authorization: `Bearer ${token}`,
             },
             onConnect: () => {
-                console.log("Успешно подключились к WebSocket");
+                //console.log("Успешно подключились к WebSocket");
                 // Подписываемся на топик
                 stompClient.subscribe(`/topic/board/${boardId}`, (message) => {
                     const updatedItem = JSON.parse(message.body);

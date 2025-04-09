@@ -71,7 +71,7 @@ export const NodeFactory = {
                 throw new Error('Ошибка обновления узла на сервере');
             }
             const updatedItem = await response.json();
-            console.log('Узел обновлен:', updatedItem);
+            //console.log('Узел обновлен:', updatedItem);
             return updatedItem;
         } catch (error) {
             console.error('Ошибка обновления узла', error);
@@ -88,7 +88,7 @@ export const NodeFactory = {
             if (!response.ok) {
                 throw new Error('Ошибка удаления узла на сервере');
             }
-            console.log('Узел удален:', nodeId);
+            //console.log('Узел удален:', nodeId);
             return true;
         } catch (error) {
             console.error('Ошибка при удалении узла', error);

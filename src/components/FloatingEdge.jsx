@@ -1,12 +1,11 @@
 // FloatingEdge.jsx
-import {getBezierPath, getSmoothStepPath, getSimpleBezierPath, useStore} from '@xyflow/react';
+import {getBezierPath, getSmoothStepPath, getSimpleBezierPath, useStore, useInternalNode} from '@xyflow/react';
 import { getEdgeParams } from '../utils/edgeUtils';
 
 function FloatingEdge({ id, source, target, markerEnd, style }) {
     // Достаём полную информацию об узлах через хук useInternalNode
-    const nodeInternals = useStore((state) => state.nodeInternals);
-    const sourceNode = nodeInternals.get(source);
-    const targetNode = nodeInternals.get(target);
+    const sourceNode = useInternalNode(source);
+    const targetNode = useInternalNode(target);
 
     // Если вдруг узел не найден (при ререндере, например), не рисуем ребро
     if (!sourceNode || !targetNode) {

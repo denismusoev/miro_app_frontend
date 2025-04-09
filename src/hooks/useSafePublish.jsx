@@ -5,16 +5,16 @@ import { useCallback } from 'react';
  * Хук для безопасной публикации сообщения через WebSocket.
  * Если соединение не установлено, логирует ошибку.
  *
- * @param {boolean} isConnected - Флаг подключения
+ * @param {boolean} connectedRef - Флаг подключения
  * @param {Function} publishFn - Функция для отправки сообщения на сервер
  */
-    export function useSafePublish(isConnected, publishFn) {
+    export function useSafePublish(connectedRef, publishFn) {
     return useCallback((destination, body) => {
-        if (!isConnected) {
+        if (!connectedRef.current) {
             console.error('[useSafePublish] Соединение не установлено, отправка невозможна.');
             return;
         }
-        console.log('[useSafePublish] Отправка на:', destination, 'Тело:', body);
+        //console.log('[useSafePublish] Отправка на:', destination, 'Тело:', body);
         publishFn(destination, body);
-    }, [isConnected, publishFn]);
+    }, [connectedRef, publishFn]);
 }

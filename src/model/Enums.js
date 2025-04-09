@@ -8,15 +8,27 @@
 // то на клиенте обычно повторяем "normal", "dotted", "dashed" (без лишних пробелов).
 // --------------------
 export const BorderStyleType = {
-    NORMAL: "normal",
+    NONE: "none",
     DOTTED: "dotted",
     DASHED: "dashed",
 };
 
+export const FrameFormatType = {
+    CUSTOM: "custom",
+    DESKTOP: "desktop",
+    PHONE: "phone",
+    TABLET: "tablet",
+    A4: "a4",
+    LETTER: "letter",
+    RATIO_1X1: "ratio_1x1",
+    RATIO_4X3: "ratio_4x3",
+    RATIO_16X9: "ratio_16x9",
+};
+
 // --------------------
-// FillColorType
+// ColorType
 // --------------------
-export const FillColorType = {
+export const ColorType = {
     F5F6F8: "#F5F6F8",
     D5F692: "#D5F692",
     D0E17A: "#D0E17A",
@@ -34,16 +46,6 @@ export const FillColorType = {
     B3B4BB: "#B3B4BB",
     BLACK: "#000000",
     WHITE: "#FFFFFF",
-};
-
-// --------------------
-// FillOpacityType
-// --------------------
-export const FillOpacityType = {
-    TRANSPARENT: "0.0",       // Полностью прозрачный
-    SEMI_TRANSPARENT: "0.5",  // Полупрозрачный
-    OPAQUE: "1.0",            // Полностью непрозрачный
-    DEFAULT: "default",       // Когда явно не задано
 };
 
 // --------------------
@@ -83,46 +85,11 @@ export const FontFamilyType = {
 };
 
 // --------------------
-// FrameFormatType
-// --------------------
-export const FrameFormatType = {
-    CUSTOM: "custom",
-    DESKTOP: "desktop",
-    PHONE: "phone",
-    TABLET: "tablet",
-    A4: "a4",
-    LETTER: "letter",
-    RATIO_1X1: "ratio_1x1",
-    RATIO_4X3: "ratio_4x3",
-    RATIO_16X9: "ratio_16x9",
-};
-
-// --------------------
-// FrameType
-// --------------------
-export const FrameType = {
-    FREEFORM: "freeform",
-    HEAP: "heap",
-    GRID: "grid",
-    ROWS: "rows",
-    UNKNOWN: "unknown",
-    COLUMNS: "columns",
-};
-
-// --------------------
 // IconShapeType
 // --------------------
 export const IconShapeType = {
     ROUND: "round",
     SQUARE: "square",
-};
-
-// --------------------
-// RelativeType
-// --------------------
-export const RelativeType = {
-    CANVAS_CENTER: "canvas_center",
-    PARENT_TOP_LEFT: "parent_top_left",
 };
 
 // --------------------
@@ -153,27 +120,6 @@ export const ShapeType = {
     RIGHT_BRACE: "right_brace",
 };
 
-// --------------------
-// StickyNoteFillColorType
-// --------------------
-export const StickyNoteFillColorType = {
-    GRAY: "gray",
-    LIGHT_YELLOW: "light_yellow",
-    YELLOW: "yellow",
-    ORANGE: "orange",
-    LIGHT_GREEN: "light_green",
-    GREEN: "green",
-    DARK_GREEN: "dark_green",
-    CYAN: "cyan",
-    LIGHT_PINK: "light_pink",
-    PINK: "pink",
-    VIOLET: "violet",
-    RED: "red",
-    LIGHT_BLUE: "light_blue",
-    BLUE: "blue",
-    DARK_BLUE: "dark_blue",
-    BLACK: "black",
-};
 
 // --------------------
 // StickyNoteShapeType
@@ -181,39 +127,6 @@ export const StickyNoteFillColorType = {
 export const StickyNoteShapeType = {
     RECTANGLE: "rectangle",
     SQUARE: "square",
-};
-
-// --------------------
-// ConnectorShapeType
-// (Сервер: STRAIGHT("straight"), CURVED("curved"), ELBOWED("elbowed "))
-// --------------------
-export const ConnectorShapeType = {
-    STRAIGHT: "straight",
-    CURVED: "curved",
-    ELBOWED: "elbowed",
-};
-
-// --------------------
-// StrokeCapType
-// --------------------
-export const StrokeCapType = {
-    NONE: "none",
-    STEALTH: "stealth",
-    ROUNDED_STEALTH: "rounded_stealth",
-    DIAMOND: "diamond",
-    FILLED_DIAMOND: "filled_diamond",
-    OVAL: "oval",
-    FILLED_OVAL: "filled_oval",
-    ARROW: "arrow",
-    TRIANGLE: "triangle",
-    FILLED_TRIANGLE: "filled_triangle",
-    ERD_ONE: "erd_one",
-    ERD_MANY: "erd_many",
-    ERD_ONLY_ONE: "erd_only_one",
-    ERD_ZERO_OR_ONE: "erd_zero_or_one",
-    ERD_ONE_OR_MANY: "erd_one_or_many",
-    ERD_ZERO_OR_MANY: "erd_zero_or_many",
-    UNKNOWN: "unknown",
 };
 
 // --------------------

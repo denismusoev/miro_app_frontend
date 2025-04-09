@@ -68,7 +68,7 @@ export const useBoardState = () => {
                 positionUnchanged &&
                 parentUnchanged
             ) {
-                console.log('Нет изменений, обновление не требуется');
+                //console.log('Нет изменений, обновление не требуется');
                 return;
             }
         }
@@ -88,7 +88,7 @@ export const useBoardState = () => {
                 throw new Error('Ошибка обновления узла на сервере');
             }
             const updatedItem = await response.json();
-            console.log('Узел обновлен:', updatedItem);
+            //console.log('Узел обновлен:', updatedItem);
             originalNodesRef.current[node.id] = node;
         } catch (error) {
             console.error('Ошибка при обновлении узла', error);
@@ -254,7 +254,7 @@ export const useBoardState = () => {
                 throw new Error('Ошибка при загрузке данных');
             }
             const itemsData = await response.json();
-            console.log("До преобразования");
+            //console.log("До преобразования");
             console.table(itemsData);
             const items = itemsData.map(ItemRs.fromServer);
 
@@ -276,7 +276,7 @@ export const useBoardState = () => {
                 };
             });
 
-            console.log("После преобразования");
+            //console.log("После преобразования");
             console.table(loadedNodes);
 
             const loadedEdges = items
