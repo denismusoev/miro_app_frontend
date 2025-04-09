@@ -37,7 +37,7 @@ const AdaptiveBackground = ({ threshold = 0.5 }) => {
         return () => clearInterval(interval);
     }, [getZoom, lastAppliedZoom, threshold]);
 
-    return <Background variant="lines" gap={dynamicGap} size={2} color="#e2e2e2" />;
+    return <Background variant="lines" gap={dynamicGap} size={20} color="#e2e2e2" />;
 };
 
 const BoardFlow = ({
@@ -56,8 +56,8 @@ const BoardFlow = ({
                    }) => {
     const containerWidth = window.innerWidth / 2;
     const containerHeight = window.innerHeight / 2;
-
     const { id } = useParams();
+
 
     const reactFlowWrapper = useRef(null);
     const [flowInstance, setFlowInstance] = useState(null);
@@ -128,7 +128,8 @@ const BoardFlow = ({
                 style={{ backgroundColor: '#f2f2f2' }}
                 fitView
                 // defaultViewport={{ x: containerWidth, y: containerHeight, zoom: 1 }}
-                snapToGrid={true}
+                snapToGrid={false}
+                snapGrid={[5, 5]}
                 minZoom={0.2}  // минимальный масштаб
                 maxZoom={10}
                 proOptions={{ hideAttribution: true }}

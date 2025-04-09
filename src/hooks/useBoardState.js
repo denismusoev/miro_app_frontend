@@ -293,7 +293,7 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
             prevNodes.map((node) => {
                 if (node.id !== id) return node;
                 // Отмечаем, что узел обновлён локально
-                // pendingUpdatesRef.current.add(id);
+                pendingUpdatesRef.current.add(id);
                 const updatedNode = attachNodeHandlers(
                     {
                         ...node,
@@ -320,8 +320,8 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
                     }
                 );
 
-                // debouncedUpdateNodeOnServer(updatedNode);
-                updateNodeOnServer(updatedNode);
+                debouncedUpdateNodeOnServer(updatedNode);
+                // updateNodeOnServer(updatedNode);
                 return updatedNode;
             })
         );
@@ -493,7 +493,7 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
     const debouncedUpdateNodeOnServer = useCallback(
         throttle((node) => {
             updateNodeOnServer(node);
-        }, 20),
+        }, 50),
         [updateNodeOnServer]
     );
 

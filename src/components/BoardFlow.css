@@ -1,3 +1,7 @@
 .boardflow-wrapper .react-flow__pane {
     cursor: default !important;
 }
+.editing svg text {
+    display: none;
+}
+  

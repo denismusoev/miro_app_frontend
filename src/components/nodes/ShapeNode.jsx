@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { NodeToolbar } from '@xyflow/react';
 import { BaseNode } from './BaseNode';
 import { Select, InputNumber, Popover, Button, Slider } from 'antd';
+import { AiOutlineBorder } from 'react-icons/ai';
+import { MdOutlineFormatColorText, MdFormatColorFill, MdOutlineFormatAlignCenter, MdFormatAlignLeft, MdFormatAlignCenter, MdFormatAlignRight, MdVerticalAlignTop } from 'react-icons/md';
 import { CirclePicker } from 'react-color';
-import { FontColorsOutlined, BgColorsOutlined } from '@ant-design/icons';
-import { hexToRgba } from '../../utils/nodeUtils';
+import { hexToRgba, getFlexAlignByVerticalTextAlign } from '../../utils/nodeUtils';
 import {
     ColorType,
     FontFamilyType,
@@ -13,8 +14,12 @@ import {
     BorderStyleType,
     ShapeType,
 } from '../../model/Enums';
+import { AlignCenterOutlined, BgColorsOutlined, FontColorsOutlined } from "@ant-design/icons";
+import { TfiLayoutLineSolid } from "react-icons/tfi";
+import { TbLineDashed, TbLineDotted } from "react-icons/tb";
+import { FaRegCircle } from "react-icons/fa";
 
-// Определяем набор возможных фигур: Круг, Квадрат, Прямоугольник и Ромб
+// Определяем набор возможных фигур для выбора
 const shapeOptions = [
     { value: ShapeType.CIRCLE, label: 'Круг' },
     { value: ShapeType.RECTANGLE, label: 'Прямоугольник' },
@@ -24,34 +29,15 @@ const shapeOptions = [
 export const ShapeNode = (props) => {
     const { id, data, selected } = props;
 
-    // Управление видимостью настроек
+    // Управление видимостью Popover'ов
     const [shapePickerVisible, setShapePickerVisible] = useState(false);
     const [textColorVisible, setTextColorVisible] = useState(false);
     const [fillSettingsVisible, setFillSettingsVisible] = useState(false);
+    const [alignmentVisible, setAlignmentVisible] = useState(false);
     const [borderSettingsVisible, setBorderSettingsVisible] = useState(false);
 
-    // Извлекаем стили из data.style
-    const {
-        fontFamily = FontFamilyType.ARIAL,
-        fontSize = 14,
-        color = '#000000',
-        fillColor = ColorType.WHITE,
-        fillOpacity = '1',
-        textAlign = TextAlignType.CENTER,
-        textAlignVertical = TextAlignVerticalType.TOP,
-        borderColor = '#000000',
-        borderOpacity = '1',
-        borderStyle = BorderStyleType.NONE,
-        borderWidth = 1,
-    } = data.style || {};
-
-    // Из data.data извлекаем тип фигуры
-    const currentShape = data.shape || ShapeType.RECTANGLE;
-    //console.log('currentShape', data.shape);
-
-    // Функции для обновления стилей и данных узла
+    // Обработчики обновления данных и стилей узла
     const handleStyleChange = (stylePart) => {
-        //console.log('handleStyleChange', stylePart);
         if (data.functions?.onStyleChange) {
             const updatedStyle = { ...data.style, ...stylePart };
             data.functions.onStyleChange(id, updatedStyle);
@@ -59,96 +45,38 @@ export const ShapeNode = (props) => {
     };
 
     const handleDataChange = (dataPart) => {
-        //console.log(data);
-        //console.log(data.functions?.onDataChange);
         if (data.functions?.onDataChange) {
             const updatedData = { ...data, ...dataPart };
-            //console.log(updatedData);
-            //console.log(data);
             data.functions.onDataChange(id, updatedData);
         }
     };
 
-    // Конвертируем цвета в формат RGBA
+    // Извлекаем стили с дефолтными значениями
+    const {
+        fontFamily = FontFamilyType.ARIAL,
+        fontSize = 14,
+        color = "#000000", // текст
+        fillColor = ColorType.WHITE,
+        fillOpacity = 1.0, // например, 1.0 или 0.5
+        textAlign = TextAlignType.CENTER,
+        textAlignVertical = TextAlignVerticalType.TOP,
+        borderColor = "#000000",
+        borderOpacity = 1.0,
+        borderStyle = BorderStyleType.NONE,
+        borderWidth = 1,
+    } = data.style || {};
+
+    // Текущий тип фигуры из data, по умолчанию прямоугольник
+    const currentShape = data.shape || ShapeType.RECTANGLE;
+
+    // Расчёт цветов
     const backgroundRgba = hexToRgba(fillColor, parseFloat(fillOpacity));
-    const strokeRgba = hexToRgba(borderColor, parseFloat(borderOpacity));
+    const borderColorRgba = hexToRgba(borderColor, parseFloat(borderOpacity));
+    const effectiveBorderWidth = borderStyle === BorderStyleType.NONE ? 0 : borderWidth;
+    const borderStyleString = `${effectiveBorderWidth}px ${borderStyle} ${borderColorRgba}`;
+    const alignItems = getFlexAlignByVerticalTextAlign(textAlignVertical);
 
-    // Если borderStyle равен NONE, то ширина обводки равна 0
-    const effectiveStrokeWidth = borderStyle === BorderStyleType.NONE ? 0 : borderWidth;
-
-    // Настроим штриховку для пунктирных/штриховых линий
-    let dashConfig = '';
-    if (borderStyle === BorderStyleType.DOTTED) {
-        dashConfig = '2,6';
-    } else if (borderStyle === BorderStyleType.DASHED) {
-        dashConfig = '10,6';
-    }
-
-    // Определяем размеры фигуры
-    const width = data.geometry?.width || 100;
-    const height = data.geometry?.height || 80;
-
-    const renderSvgShape = () => {
-        // Общие параметры для всех фигур
-        const commonProps = {
-            fill: backgroundRgba,
-            stroke: strokeRgba,
-            strokeWidth: effectiveStrokeWidth,
-            ...(dashConfig && { strokeDasharray: dashConfig }),
-        };
-
-        switch (currentShape) {
-            case ShapeType.CIRCLE:
-                // Используем эллипс, чтобы фигура заполняла весь прямоугольник.
-                // При неравных width/height получится растянутый овал.
-                return (
-                    <ellipse
-                        cx={width / 2}
-                        cy={height / 2}
-                        rx={width / 2}
-                        ry={height / 2}
-                        {...commonProps}
-                    />
-                );
-
-            case ShapeType.SQUARE:
-                // "Квадрат" тоже растягиваем на весь контейнер,
-                // фактически получая прямоугольник, если width != height.
-                return (
-                    <rect
-                        x={0}
-                        y={0}
-                        width={width}
-                        height={height}
-                        {...commonProps}
-                    />
-                );
-
-            case ShapeType.RHOMBUS:
-                // Ромб — углы идут в середины сторон контейнера.
-                // (width/2,0), (width,height/2), (width/2,height), (0,height/2)
-                const points = `${width / 2},0 ${width},${height / 2} ${width / 2},${height} 0,${height / 2}`;
-                return (
-                    <polygon points={points} {...commonProps} />
-                );
-
-            case ShapeType.RECTANGLE:
-            default:
-                // Прямоугольник тоже на весь контейнер.
-                return (
-                    <rect
-                        x={0}
-                        y={0}
-                        width={width}
-                        height={height}
-                        {...commonProps}
-                    />
-                );
-        }
-    };
-
-    // Стили для контейнера узла
-    const containerStyle = {
+    const innerStyle = {
         position: 'absolute',
         inset: 0,
         display: 'flex',
@@ -158,211 +86,159 @@ export const ShapeNode = (props) => {
         color,
     };
 
-    const offset = effectiveStrokeWidth / 2;
-    const vbX = -offset;
-    const vbY = -offset;
-    const vbWidth = width + effectiveStrokeWidth;
-    const vbHeight = height + effectiveStrokeWidth;
+    // Функции для вычисления позиций и отрисовки фигуры (оставляем без изменений)
+// Определяем отступ (в пикселях)
+const MARGIN = 40;
 
-    function getEllipseTextPosition(width, height, alignmentH, alignmentV) {
-        const cx = width / 2;
-        const cy = height / 2;
-        const rx = width / 2;
-        const ry = height / 2;
+const midpoint = (p1, p2) => ({
+    x: (p1.x + p2.x) / 2,
+    y: (p1.y + p2.y) / 2,
+});
 
-        // Если выбрано "center-middle" (горизонтальное = center, вертикальное = middle),
-        // то просто возвращаем центр эллипса.
-        if (alignmentH === 'center' && alignmentV === 'middle') {
-            return { x: cx, y: cy };
-        }
+// Для эллипса уменьшаем радиусы на MARGIN, чтобы текст не прилегал к краю
+const getEllipseTextPosition = (width, height, alignmentH, alignmentV) => {
+  const cx = width / 2;
+  const cy = height / 2;
+  const rx = width / 2;
+  const ry = height / 2;
+  const rxEff = Math.max(0, rx - MARGIN);
+  const ryEff = Math.max(0, ry - MARGIN);
+  if (alignmentH === 'center' && alignmentV === 'middle') {
+    return { x: cx, y: cy };
+  }
+  const combinationKey = `${alignmentH}-${alignmentV}`;
+  let angleDeg = 0;
+  switch (combinationKey) {
+    case 'left-top':
+      angleDeg = 135;
+      break;
+    case 'center-top':
+      angleDeg = 90;
+      break;
+    case 'right-top':
+      angleDeg = 45;
+      break;
+    case 'left-middle':
+      angleDeg = 180;
+      break;
+    case 'right-middle':
+      angleDeg = 0;
+      break;
+    case 'left-bottom':
+      angleDeg = 225;
+      break;
+    case 'center-bottom':
+      angleDeg = 270;
+      break;
+    case 'right-bottom':
+      angleDeg = 315;
+      break;
+    default:
+      angleDeg = 0;
+      break;
+  }
+  const angleRad = (Math.PI / 180) * angleDeg;
+  const x = cx + rxEff * Math.cos(angleRad);
+  const y = cy - ryEff * Math.sin(angleRad);
+  return { x, y };
+};
 
-        // Формируем ключ, например "left-top", "right-bottom" и т.д.
-        const combinationKey = `${alignmentH}-${alignmentV}`;
-        let angleDeg = 0;
-
-        switch (combinationKey) {
-            case 'left-top':
-                // Левая-верхняя точка: угол ~135°
-                angleDeg = 135;
-                break;
-
-            case 'center-top':
-                // Середина сверху: угол ~90°
-                angleDeg = 90;
-                break;
-
-            case 'right-top':
-                // Правая-верхняя точка: угол ~45°
-                angleDeg = 45;
-                break;
-
-            case 'left-middle':
-                // Левая-центральная точка: угол ~180°
-                angleDeg = 180;
-                break;
-
-            // «center-middle» мы уже обработали условием выше
-
-            case 'right-middle':
-                // Правая-центральная точка: угол ~0°
-                angleDeg = 0;
-                break;
-
-            case 'left-bottom':
-                // Левая-нижняя точка: угол ~225°
-                angleDeg = 225;
-                break;
-
-            case 'center-bottom':
-                // Середина снизу: угол ~270°
-                angleDeg = 270;
-                break;
-
-            case 'right-bottom':
-                // Правая-нижняя точка: угол ~315°
-                angleDeg = 315;
-                break;
-
-            default:
-                // fallback — пусть будет 0° (справа)
-                angleDeg = 0;
-                break;
-        }
-
-        // Переводим градусы в радианы
-        const angleRad = (Math.PI / 180) * angleDeg;
-
-        // Для SVG с вертикальной осью вниз используем y = cy - ry * sin(...).
-        // 0° => (cx + rx, cy).
-        const x = cx + rx * Math.cos(angleRad);
-        const y = cy - ry * Math.sin(angleRad);
-
-        return { x, y };
+// Для прямоугольника задаём позицию в зависимости от выравнивания с отступами
+    const getRectangleTextPosition = (width, height, alignmentH, alignmentV) => {
+    let x, y;
+    if (alignmentH === 'left') {
+        x = MARGIN;
+    } else if (alignmentH === 'right') {
+        x = width - MARGIN;
+    } else {
+        x = width / 2;
     }
-    function getRectangleTextPosition(width, height, alignmentH, alignmentV) {
-        // Здесь всё просто:
-        // left-top -> (0, 0), center-center -> (width/2, height/2), right-bottom -> (width, height)
-        let x, y;
-
-        switch (alignmentH) {
-            case 'left':
-                x = 0;
-                break;
-            case 'right':
-                x = width;
-                break;
-            default:
-                // center
-                x = width / 2;
-        }
-
-        switch (alignmentV) {
-            case 'top':
-                y = 0;
-                break;
-            case 'bottom':
-                y = height;
-                break;
-            default:
-                // center
-                y = height / 2;
-        }
-
-        return { x, y };
+    if (alignmentV === 'top') {
+        y = MARGIN;
+    } else if (alignmentV === 'bottom') {
+        y = height - MARGIN;
+    } else {
+        y = height / 2;
     }
-    function getTextPositionForShape(
+    return { x, y };
+    };
+
+// Для ромба пересмотрен алгоритм: вместо простого midpoint задаём позицию как фиксированные доли ширины/высоты,
+// чтобы для left-middle и right-middle смещение было заметнее
+const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
+
+const getRhombusTextPosition = (width, height, alignmentH, alignmentV) => {
+  // Определяем крайние точки фигуры с учетом отступов
+  const top = { x: width / 2, y: MARGIN };
+  const right = { x: width - MARGIN, y: height / 2 };
+  const bottom = { x: width / 2, y: height - MARGIN };
+  const left = { x: MARGIN, y: height / 2 };
+  const center = { x: width / 2, y: height / 2 };
+
+  const combinationKey = `${alignmentH}-${alignmentV}`;
+
+  let pos;
+  switch (combinationKey) {
+    case 'left-top':
+      pos = midpoint(top, left);
+      break;
+    case 'center-top':
+      pos = midpoint(top, center);
+      break;
+    case 'right-top':
+      pos = midpoint(top, right);
+      break;
+    case 'left-middle':
+      // Вместо midpoint(left, center) (который дает около 25% от ширины), задаем более сильное смещение
+      pos = { x: width * 0.15, y: height / 2 };
+      break;
+    case 'center-middle':
+      pos = center;
+      break;
+    case 'right-middle':
+      // Аналогично, заменяем midpoint(right, center) на позицию около 85% от ширины
+      pos = { x: width * 0.85, y: height / 2 };
+      break;
+    case 'left-bottom':
+      pos = midpoint(bottom, left);
+      break;
+    case 'center-bottom':
+      pos = midpoint(bottom, center);
+      break;
+    case 'right-bottom':
+      pos = midpoint(bottom, right);
+      break;
+    default:
+      pos = center;
+      break;
+  }
+
+  // Клипаем результат, чтобы не выйти за отступы
+  return {
+    x: clamp(pos.x, MARGIN, width - MARGIN),
+    y: clamp(pos.y, MARGIN, height - MARGIN)
+  };
+};
+
+
+    const getTextPositionForShape = (
         shapeType,
         width,
         height,
-        textAlign,        // 'left' | 'center' | 'right'
+        textAlign, // 'left' | 'center' | 'right'
         textAlignVertical // 'top' | 'center' | 'bottom'
-    ) {
+    ) => {
         switch (shapeType) {
             case ShapeType.RHOMBUS:
                 return getRhombusTextPosition(width, height, textAlign, textAlignVertical);
             case ShapeType.CIRCLE:
                 return getEllipseTextPosition(width, height, textAlign, textAlignVertical);
-            // и т.д. для остальных типов...
             default:
                 return getRectangleTextPosition(width, height, textAlign, textAlignVertical);
         }
-    }
+    };
 
-// Пример для ромба (9 вариантов – left-top, center-top, right-top и т.д.),
-// где вы сами решаете, какие именно точки взять за "top-left" и т.п.
-    function getRhombusTextPosition(width, height, alignmentH, alignmentV) {
-        const top    = { x: width / 2, y: 0 };
-        const right  = { x: width,     y: height / 2 };
-        const bottom = { x: width / 2, y: height };
-        const left   = { x: 0,         y: height / 2 };
-        const center = { x: width / 2, y: height / 2 };
-
-        const combinationKey = `${alignmentH}-${alignmentV}`;
-
-        //console.log(combinationKey)
-
-        switch (combinationKey) {
-            //
-            // ВЕРХ
-            //
-            case 'left-top':
-                // midpoint между верхней и левой вершинами
-                return midpoint(top, left);
-            case 'center-top':
-                // midpoint между верхней вершиной и центром
-                return midpoint(top, center);
-            case 'right-top':
-                // midpoint между верхней и правой вершинами
-                return midpoint(top, right);
-
-            //
-            // СЕРЕДИНА (vertical = middle)
-            //
-            case 'left-middle':
-                // midpoint между левой вершиной и центром
-                return midpoint(left, center);
-            case 'center-middle':
-                // сам центр
-                return center;
-            case 'right-middle':
-                // midpoint между правой вершиной и центром
-                return midpoint(right, center);
-
-            //
-            // НИЗ
-            //
-            case 'left-bottom':
-                // midpoint между нижней и левой вершинами
-                return midpoint(bottom, left);
-            case 'center-bottom':
-                // midpoint между нижней вершиной и центром
-                return midpoint(bottom, center);
-            case 'right-bottom':
-                // midpoint между нижней и правой вершинами
-                return midpoint(bottom, right);
-
-            default:
-                // fallback — центр
-                return center;
-        }
-    }
-    const { x: textX, y: textY } = getTextPositionForShape(
-        currentShape,
-        width,
-        height,
-        textAlign,        // 'left' | 'center' | 'right'
-        textAlignVertical // 'top'  | 'center' | 'bottom'
-    );
-
-    function midpoint(p1, p2) {
-        return {
-            x: (p1.x + p2.x) / 2,
-            y: (p1.y + p2.y) / 2,
-        };
-    }
-
-    function getShapeElement(shapeType, width, height, props = {}) {
-        // props = {...} любые атрибуты вроде fill, stroke...
+    const getShapeElement = (shapeType, width, height, props = {}) => {
         switch (shapeType) {
             case ShapeType.CIRCLE:
                 return (
@@ -374,14 +250,10 @@ export const ShapeNode = (props) => {
                         {...props}
                     />
                 );
-
             case ShapeType.RHOMBUS: {
                 const points = `${width / 2},0 ${width},${height / 2} ${width / 2},${height} 0,${height / 2}`;
                 return <polygon points={points} {...props} />;
             }
-
-            // Можно добавить ShapeType.SQUARE, если у вас есть отдельный вариант
-            // Но ниже в switch (ShapeType.RECTANGLE) можно тоже рисовать <rect>.
             case ShapeType.RECTANGLE:
             default:
                 return (
@@ -394,42 +266,53 @@ export const ShapeNode = (props) => {
                     />
                 );
         }
-    }
+    };
 
-
+    // Размеры фигуры
+    const width = data.geometry?.width || 100;
+    const height = data.geometry?.height || 80;
+    const offset = effectiveBorderWidth / 2;
+    const vbX = -offset;
+    const vbY = -offset;
+    const vbWidth = width + effectiveBorderWidth;
+    const vbHeight = height + effectiveBorderWidth;
+    const { x: textX, y: textY } = getTextPositionForShape(
+        currentShape,
+        width,
+        height,
+        textAlign,
+        textAlignVertical
+    );
 
     return (
         <BaseNode id={id} data={data} selected={selected}>
-            <div style={containerStyle}>
-                {/* Отрисовка фигуры с помощью SVG */}
+            <div style={innerStyle}>
                 <svg
                     width={width}
                     height={height}
                     viewBox={`${vbX} ${vbY} ${vbWidth} ${vbHeight}`}
+                    // viewBox="0 0 width height"
+                    preserveAspectRatio="none"
                     style={{ overflow: 'hidden' }}
                 >
-                    {/* Объявляем clipPath в <defs> */}
                     <defs>
                         <clipPath id={`clipShape-${id}`}>
-                            {
-                                // Тот же самый shape, но можно не указывать fill / stroke,
-                                // clipPath читает только геометрию
-                                getShapeElement(currentShape, width, height)
-                            }
+                            {getShapeElement(currentShape, width, height)}
                         </clipPath>
                     </defs>
-
-                    {/* Сама фигура (с заливкой, обводкой и т.д.) */}
-                    {
-                        getShapeElement(currentShape, width, height, {
-                            fill: backgroundRgba,
-                            stroke: strokeRgba,
-                            strokeWidth: effectiveStrokeWidth,
-                            ...(dashConfig && { strokeDasharray: dashConfig }),
-                        })
-                    }
-
-                    {/* Группа с текстом, к которой применяется clip-path */}
+                    {getShapeElement(currentShape, width, height, {
+                        fill: backgroundRgba,
+                        stroke: hexToRgba(borderColor, parseFloat(borderOpacity)),
+                        strokeWidth: effectiveBorderWidth,
+                        ...(borderStyle !== BorderStyleType.NONE && {
+                            strokeDasharray:
+                                borderStyle === BorderStyleType.DOTTED
+                                    ? '2,6'
+                                    : borderStyle === BorderStyleType.DASHED
+                                        ? '10,6'
+                                        : undefined,
+                        }),
+                    })}
                     <g clipPath={`url(#clipShape-${id})`}>
                         <text
                             x={textX}
@@ -451,25 +334,19 @@ export const ShapeNode = (props) => {
                             fill={color}
                             style={{ pointerEvents: 'none' }}
                         >
-                            {data.label}
+                            {data.label || ''}
                         </text>
                     </g>
                 </svg>
 
-                {/* Панель инструментов узла */}
                 <NodeToolbar
                     onDoubleClick={(e) => e.stopPropagation()}
                     isVisible={selected}
                     position="top"
                     className="bg-white rounded shadow-sm"
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '8px 12px',
-                        gap: '12px',
-                    }}
+                    style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '12px' }}
                 >
-                    {/* Кнопка выбора типа фигуры */}
+                    {/* Новый элемент в самом начале для выбора типа фигуры */}
                     <Popover
                         getPopupContainer={(trigger) => trigger.parentElement}
                         content={
@@ -498,42 +375,23 @@ export const ShapeNode = (props) => {
                         </Button>
                     </Popover>
 
-                    {/* Элементы панели инструментов для настройки текста */}
-                    {/*<Select*/}
-                    {/*    value={fontFamily}*/}
-                    {/*    onChange={(val) => handleStyleChange({ fontFamily: val })}*/}
-                    {/*    style={{ width: 120, minWidth: 80 }}*/}
-                    {/*    options={Object.values(FontFamilyType).map((f) => ({ value: f, label: f }))}*/}
-                    {/*/>*/}
-                    {/*<InputNumber*/}
-                    {/*    value={fontSize}*/}
-                    {/*    onChange={(val) => handleStyleChange({ fontSize: val })}*/}
-                    {/*    min={1}*/}
-                    {/*    style={{ width: 60, textAlign: 'center' }}*/}
-                    {/*/>*/}
-                    {/*/!* Выбор горизонтального выравнивания *!/*/}
-                    {/*<Select*/}
-                    {/*    value={textAlign}*/}
-                    {/*    onChange={(val) => handleStyleChange({ textAlign: val })}*/}
-                    {/*    style={{ width: 120, minWidth: 80 }}*/}
-                    {/*    options={[*/}
-                    {/*        { value: TextAlignType.LEFT, label: 'Влево' },*/}
-                    {/*        { value: TextAlignType.CENTER, label: 'По центру' },*/}
-                    {/*        { value: TextAlignType.RIGHT, label: 'Вправо' },*/}
-                    {/*    ]}*/}
-                    {/*/>*/}
-
-                    {/* Выбор вертикального выравнивания */}
+                    {/* Остальные элементы панели инструментов, связанные с настройкой шрифта, цвета, заливки, выравнивания и обводки */}
                     <Select
-                        value={textAlignVertical}
-                        onChange={(val) => handleStyleChange({ textAlignVertical: val })}
+                        value={fontFamily}
+                        onChange={(val) => handleStyleChange({ fontFamily: val })}
+                        variant={"filled"}
                         style={{ width: 120, minWidth: 80 }}
-                        options={[
-                            { value: TextAlignVerticalType.TOP, label: 'Верх' },
-                            { value: TextAlignVerticalType.MIDDLE, label: 'По центру' },
-                            { value: TextAlignVerticalType.BOTTOM, label: 'Низ' },
-                        ]}
+                        options={Object.values(FontFamilyType).map((font) => ({ value: font, label: font }))}
                     />
+
+                    <InputNumber
+                        value={fontSize}
+                        onChange={(val) => handleStyleChange({ fontSize: val })}
+                        min={1}
+                        variant={"filled"}
+                        style={{ width: 60, textAlign: 'center' }}
+                    />
+
                     <Popover
                         getPopupContainer={(trigger) => trigger.parentElement}
                         content={
@@ -545,39 +403,41 @@ export const ShapeNode = (props) => {
                                 }}
                             />
                         }
-                        title="Цвет текста"
+                        title="Text Color"
                         trigger="click"
-                        visible={textColorVisible}
-                        onVisibleChange={setTextColorVisible}
                     >
-                        <Button onClick={() => setTextColorVisible(true)}>
-                            <FontColorsOutlined />
-                        </Button>
+                        <button
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: 'transparent',
+                                border: 'none',
+                                cursor: 'pointer'
+                            }}
+                            title="Text Color"
+                            onClick={() => setTextColorVisible(true)}
+                        >
+                            <FontColorsOutlined style={{ fontSize: '20px' }} />
+                        </button>
                     </Popover>
 
-                    {/* Настройки заливки */}
                     <Popover
                         getPopupContainer={(trigger) => trigger.parentElement}
                         content={
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ padding: '6px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                 <div>
-                                    <div style={{ fontSize: '12px', marginBottom: '4px' }}>
-                                        Прозрачность заливки
-                                    </div>
+                                    <div style={{ fontSize: '12px', marginBottom: '4px' }}>Fill Opacity</div>
                                     <Slider
                                         min={0}
                                         max={1}
                                         step={0.05}
                                         value={parseFloat(fillOpacity)}
-                                        onChange={(val) =>
-                                            handleStyleChange({ fillOpacity: val.toString() })
-                                        }
+                                        onChange={(val) => handleStyleChange({ fillOpacity: val.toString() })}
                                     />
                                 </div>
                                 <div>
-                                    <div style={{ fontSize: '12px', marginBottom: '4px' }}>
-                                        Цвет заливки
-                                    </div>
+                                    <div style={{ fontSize: '12px', marginBottom: '4px' }}>Fill Color</div>
                                     <CirclePicker
                                         color={fillColor}
                                         onChangeComplete={(newColor) => {
@@ -587,70 +447,135 @@ export const ShapeNode = (props) => {
                                 </div>
                             </div>
                         }
-                        title="Настройки заливки"
+                        title="Fill Settings"
                         trigger="click"
-                        visible={fillSettingsVisible}
-                        onVisibleChange={setFillSettingsVisible}
                     >
-                        <Button>
-                            <BgColorsOutlined />
-                        </Button>
+                        <button
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: 'transparent',
+                                border: 'none',
+                                cursor: 'pointer'
+                            }}
+                            title="Fill Settings"
+                        >
+                            <BgColorsOutlined style={{ fontSize: '20px' }} />
+                        </button>
                     </Popover>
 
-                    {/* Настройки обводки */}
                     <Popover
                         getPopupContainer={(trigger) => trigger.parentElement}
                         content={
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+                                    <Button
+                                        type="text"
+                                        onClick={() => handleStyleChange({ textAlign: TextAlignType.LEFT })}
+                                    >
+                                        <MdFormatAlignLeft size={18} style={{ opacity: textAlign === TextAlignType.LEFT ? 1 : 0.5 }} />
+                                    </Button>
+                                    <Button
+                                        type="text"
+                                        onClick={() => handleStyleChange({ textAlign: TextAlignType.CENTER })}
+                                    >
+                                        <MdFormatAlignCenter size={18} style={{ opacity: textAlign === TextAlignType.CENTER ? 1 : 0.5 }} />
+                                    </Button>
+                                    <Button
+                                        type="text"
+                                        onClick={() => handleStyleChange({ textAlign: TextAlignType.RIGHT })}
+                                    >
+                                        <MdFormatAlignRight size={18} style={{ opacity: textAlign === TextAlignType.RIGHT ? 1 : 0.5 }} />
+                                    </Button>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+                                    <Button
+                                        type="text"
+                                        onClick={() => handleStyleChange({ textAlignVertical: TextAlignVerticalType.TOP })}
+                                    >
+                                        <MdVerticalAlignTop size={18} style={{ opacity: textAlignVertical === TextAlignVerticalType.TOP ? 1 : 0.5 }} />
+                                    </Button>
+                                    <Button
+                                        type="text"
+                                        onClick={() => handleStyleChange({ textAlignVertical: TextAlignVerticalType.MIDDLE })}
+                                    >
+                                        <MdVerticalAlignTop
+                                            size={18}
+                                            style={{ opacity: textAlignVertical === TextAlignVerticalType.MIDDLE ? 1 : 0.5, transform: 'rotate(90deg)' }}
+                                        />
+                                    </Button>
+                                    <Button
+                                        type="text"
+                                        onClick={() => handleStyleChange({ textAlignVertical: TextAlignVerticalType.BOTTOM })}
+                                    >
+                                        <MdVerticalAlignTop
+                                            size={18}
+                                            style={{ opacity: textAlignVertical === TextAlignVerticalType.BOTTOM ? 1 : 0.5, transform: 'rotate(180deg)' }}
+                                        />
+                                    </Button>
+                                </div>
+                            </div>
+                        }
+                        title="Alignment"
+                        trigger="click"
+                        placement="bottom"
+                    >
+                        <button
+                            type="text"
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: 'transparent',
+                                border: 'none',
+                                cursor: 'pointer'
+                            }}
+                            title="Alignment"
+                        >
+                            <AlignCenterOutlined style={{ fontSize: '20px' }} />
+                        </button>
+                    </Popover>
+
+                    <Popover
+                        getPopupContainer={(trigger) => trigger.parentElement}
+                        content={
+                            <div style={{ padding: '6px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                 <div>
-                                    <div style={{ fontSize: '12px', marginBottom: '4px' }}>
-                                        Прозрачность обводки
-                                    </div>
+                                    <div style={{ fontSize: '12px', marginBottom: '4px' }}>Border Opacity</div>
                                     <Slider
                                         min={0}
                                         max={1}
                                         step={0.05}
                                         value={parseFloat(borderOpacity)}
-                                        onChange={(val) =>
-                                            handleStyleChange({ borderOpacity: val.toString() })
-                                        }
+                                        onChange={(val) => handleStyleChange({ borderOpacity: val.toString() })}
                                     />
                                 </div>
                                 <div>
-                                    <div style={{ fontSize: '12px', marginBottom: '4px' }}>
-                                        Стиль обводки
-                                    </div>
+                                    <div style={{ fontSize: '12px', marginBottom: '4px' }}>Border Style</div>
                                     <div style={{ display: 'flex', gap: '8px' }}>
                                         <Button
-                                            type={borderStyle === BorderStyleType.NONE ? 'primary' : 'default'}
-                                            onClick={() =>
-                                                handleStyleChange({ borderStyle: BorderStyleType.NONE, borderWidth: 0 })
-                                            }
+                                            type={borderStyle === BorderStyleType.NONE ? "primary" : "default"}
+                                            onClick={() => handleStyleChange({ borderStyle: BorderStyleType.NONE })}
                                         >
-                                            Нет
+                                            <TfiLayoutLineSolid size={30} />
                                         </Button>
                                         <Button
-                                            type={
-                                                borderStyle === BorderStyleType.DOTTED ? 'primary' : 'default'
-                                            }
+                                            type={borderStyle === BorderStyleType.DOTTED ? "primary" : "default"}
                                             onClick={() => handleStyleChange({ borderStyle: BorderStyleType.DOTTED })}
                                         >
-                                            Пунктир
+                                            <TbLineDotted size={30} />
                                         </Button>
                                         <Button
-                                            type={
-                                                borderStyle === BorderStyleType.DASHED ? 'primary' : 'default'
-                                            }
+                                            type={borderStyle === BorderStyleType.DASHED ? "primary" : "default"}
                                             onClick={() => handleStyleChange({ borderStyle: BorderStyleType.DASHED })}
                                         >
-                                            Штрих
+                                            <TbLineDashed size={30} />
                                         </Button>
                                     </div>
                                 </div>
                                 <div>
-                                    <div style={{ fontSize: '12px', marginBottom: '4px' }}>
-                                        Толщина обводки
-                                    </div>
+                                    <div style={{ fontSize: '12px', marginBottom: '4px' }}>Border Width</div>
                                     <Slider
                                         min={0}
                                         max={10}
@@ -661,9 +586,7 @@ export const ShapeNode = (props) => {
                                     />
                                 </div>
                                 <div>
-                                    <div style={{ fontSize: '12px', marginBottom: '4px' }}>
-                                        Цвет обводки
-                                    </div>
+                                    <div style={{ fontSize: '12px', marginBottom: '4px' }}>Border Color</div>
                                     <CirclePicker
                                         color={borderColor}
                                         onChangeComplete={(newColor) => {
@@ -674,12 +597,22 @@ export const ShapeNode = (props) => {
                                 </div>
                             </div>
                         }
-                        title="Настройки обводки"
+                        title="Border Settings"
                         trigger="click"
-                        visible={borderSettingsVisible}
-                        onVisibleChange={setBorderSettingsVisible}
                     >
-                        <Button>Обводка</Button>
+                        <button
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: 'transparent',
+                                border: 'none',
+                                cursor: 'pointer'
+                            }}
+                            title="Border Settings"
+                        >
+                            <FaRegCircle style={{ fontSize: '20px' }} />
+                        </button>
                     </Popover>
                 </NodeToolbar>
             </div>
@@ -687,4 +620,3 @@ export const ShapeNode = (props) => {
     );
 };
 
-export default ShapeNode;
