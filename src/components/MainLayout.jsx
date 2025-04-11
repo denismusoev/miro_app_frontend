@@ -126,8 +126,10 @@ const MainLayout = ({ children }) => {
                     left: 0,
                     top: 0,
                     bottom: 0,
-                    zIndex: 1000
+                    zIndex: 1000,
+                    background: '#ffffff'
                 }}
+                theme="light"
             >
                 {/* Логотип */}
                 <div style={{ 
@@ -135,27 +137,29 @@ const MainLayout = ({ children }) => {
                     alignItems: 'center', 
                     justifyContent: collapsed ? 'center' : 'flex-start',
                     padding: collapsed ? '16px 0' : '16px 24px',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    background: '#ffffff'
                 }} onClick={() => navigate('/')}>
-                    <BulbOutlined style={{ color: 'white', fontSize: '20px' }} />
+                    <BulbOutlined style={{ color: 'black', fontSize: '20px' }} />
                     {!collapsed && (
                         <Title level={4} style={{ 
                             margin: '0 0 0 12px', 
-                            color: 'white'
+                            color: 'black'
                         }}>
                             Miro
                         </Title>
                     )}
                 </div>
                 
-                <Divider style={{ margin: '0 0 8px 0', borderColor: 'rgba(255,255,255,0.1)' }} />
+                {/* <Divider style={{ margin: '0 0 8px 0', borderColor: 'rgba(99, 99, 99, 0.3)' }} /> */}
                 
                 {/* Меню навигации */}
                 <Menu 
-                    theme="dark" 
+                    theme="light" 
                     mode="inline" 
                     selectedKeys={[getSelectedKey()]}
                     items={menuItems}
+                    style={{ background: 'transparent' }}
                     onClick={({ key }) => {
                         if (key === 'projects') navigate('/projects');
                         if (key === 'project') navigate('/project');
@@ -172,7 +176,7 @@ const MainLayout = ({ children }) => {
                     width: '100%',
                     padding: '0 16px'
                 }}>
-                    <Divider style={{ margin: '8px 0', borderColor: 'rgba(255,255,255,0.1)' }} />
+                    <Divider style={{ margin: '8px 0', borderColor: 'rgba(0, 0, 0, 0.3)' }} />
                     
                     {/* Информация о пользователе */}
                     {!collapsed && userInfo && (userInfo.firstName || userInfo.lastName) && (
@@ -184,14 +188,14 @@ const MainLayout = ({ children }) => {
                                 justifyContent: 'center',
                             }}>
                                 <Text style={{ 
-                                    color: 'rgba(255,255,255,0.85)', 
+                                    color: 'black', 
                                     fontSize: '13px', 
                                     textAlign: 'center'
                                 }}>
                                     {`${userInfo.firstName || ''} ${userInfo.lastName || ''}`}
                                 </Text>
                             </div>
-                            <Divider style={{ margin: '8px 0', borderColor: 'rgba(255,255,255,0.1)' }} />
+                            <Divider style={{ margin: '8px 0', borderColor: 'rgba(0, 0, 0, 0.3)' }} />
                         </>
                     )}
                     
@@ -205,7 +209,7 @@ const MainLayout = ({ children }) => {
                                         justifyContent: 'center',
                                         alignItems: 'center',
                                         cursor: 'pointer',
-                                        color: 'rgba(255,255,255,0.85)'
+                                        color: 'black'
                                     }}
                                 >
                                     <LogoutOutlined style={{ fontSize: '18px' }} />
@@ -220,7 +224,7 @@ const MainLayout = ({ children }) => {
                                     padding: '6px 16px',
                                     borderRadius: '4px',
                                     cursor: 'pointer',
-                                    color: 'rgba(255,255,255,0.85)',
+                                    color: 'black',
                                     transition: 'none',
                                     width: '100%',
                                     justifyContent: 'center'
