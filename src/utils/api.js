@@ -87,3 +87,70 @@ export const updateInvite = async (token, updateData) => {
 export const deactivateInvite = async (token) => {
     return axios.delete(`${API_BASE_URL}/invites/${token}`, getAuthHeaders());
 };
+
+// Функции для управления правами пользователей на проекте
+export const getProjectParticipants = async (projectId) => {
+    return axios.get(`${API_BASE_URL}/permissions/project/${projectId}/participants`, getAuthHeaders());
+};
+
+export const getCurrentUserProjectAccess = async (projectId) => {
+    return axios.get(`${API_BASE_URL}/permissions/project/${projectId}/current-user-access`, getAuthHeaders());
+};
+
+export const addUserToProject = async (projectId, userData) => {
+    return axios.post(`${API_BASE_URL}/permissions/project/${projectId}/users`, userData, getAuthHeaders());
+};
+
+export const updateUserProjectPermission = async (projectId, userData) => {
+    return axios.put(`${API_BASE_URL}/permissions/project/${projectId}/users`, userData, getAuthHeaders());
+};
+
+export const removeUserFromProject = async (projectId, email) => {
+    return axios.delete(`${API_BASE_URL}/permissions/project/${projectId}/users?email=${email}`, getAuthHeaders());
+};
+
+// Функции для управления правами пользователей на доске
+export const getBoardParticipants = async (boardId) => {
+    return axios.get(`${API_BASE_URL}/permissions/board/${boardId}/participants`, getAuthHeaders());
+};
+
+export const getCurrentUserBoardAccess = async (boardId) => {
+    return axios.get(`${API_BASE_URL}/permissions/board/${boardId}/current-user-access`, getAuthHeaders());
+};
+
+export const addUserToBoard = async (boardId, userData) => {
+    return axios.post(`${API_BASE_URL}/permissions/board/${boardId}/users`, userData, getAuthHeaders());
+};
+
+export const updateUserBoardPermission = async (boardId, userData) => {
+    return axios.put(`${API_BASE_URL}/permissions/board/${boardId}/users`, userData, getAuthHeaders());
+};
+
+export const removeUserFromBoard = async (boardId, email) => {
+    return axios.delete(`${API_BASE_URL}/permissions/board/${boardId}/users?email=${email}`, getAuthHeaders());
+};
+
+// Добавляем функцию для поиска проектов
+export const searchProjects = async (params) => {
+    return axios.get(`${API_BASE_URL}/projects/search`, { 
+        params,
+        ...getAuthHeaders() 
+    });
+};
+
+// Добавляем функцию для поиска досок
+export const searchBoards = async (params) => {
+    return axios.get(`${API_BASE_URL}/boards/search`, { 
+        params,
+        ...getAuthHeaders() 
+    });
+};
+
+// Функции для работы с профилем пользователя
+export const getCurrentUser = async () => {
+    return axios.get(`${API_BASE_URL}/auth/me`, getAuthHeaders());
+};
+
+export const updateUserProfile = async (profileData) => {
+    return axios.put(`${API_BASE_URL}/users/profile`, profileData, getAuthHeaders());
+};

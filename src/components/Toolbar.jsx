@@ -1,17 +1,17 @@
 import React from 'react';
 import { useDrag } from './nodes/DragContext';
-import { Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Button, Tooltip } from 'antd';
 import "./Toolbar.css"
 import {
-    FiType,
-    FiSquare,
-    FiImage,
-    FiPenTool,
-    FiFileText,
-    FiGrid,
-    FiClipboard,
-    FiTrash2,
-} from 'react-icons/fi';
+    FontSizeOutlined,
+    BorderOutlined,
+    PictureOutlined,
+    EditOutlined,
+    FileTextOutlined,
+    AppstoreOutlined,
+    FormOutlined,
+    DeleteOutlined
+} from '@ant-design/icons';
 
 const Toolbar = ({ boardId, addNode, removeLastNode }) => {
     const { setType } = useDrag();
@@ -22,109 +22,151 @@ const Toolbar = ({ boardId, addNode, removeLastNode }) => {
         event.dataTransfer.effectAllowed = 'move';
     };
 
-    const renderTooltip = (props, text) => (
-        <Tooltip id="toolbar-tooltip" {...props}>
-            {text}
-        </Tooltip>
-    );
+    const buttonStyle = {
+        width: '48px',
+        height: '38px',
+        margin: '3px 0',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+    };
+
+    const iconStyle = {
+        fontSize: '20px'
+    };
+
+    const noHighlightStyles = `
+        .toolbar-floating .ant-btn:hover,
+        .toolbar-floating .ant-btn:focus,
+        .toolbar-floating .ant-btn:active {
+            background-color: transparent !important;
+            color: inherit !important;
+            outline: none !important;
+            box-shadow: none !important;
+        }
+        
+        .toolbar-floating .ant-btn-text:hover,
+        .toolbar-floating .ant-btn-text:focus {
+            background-color: transparent !important;
+        }
+    `;
 
     return (
-        <div className="toolbar-floating">
-            {/* Текст */}
-            <OverlayTrigger placement="bottom" overlay={(props) => renderTooltip(props, 'Text')}>
-                <Button
-                    variant="light"
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, 'text')}
-                    style={{ border: 'none', background: 'transparent' }}
-                >
-                    <FiType size={24} />
-                </Button>
-            </OverlayTrigger>
+        <>
+            <style>{noHighlightStyles}</style>
+            <div className="toolbar-floating" style={{ 
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)', 
+                borderRadius: '8px', 
+                padding: '6px 0',
+                width: '60px'
+            }}>
+                {/* Текст */}
+                <Tooltip title="Текст" placement="right">
+                    <Button
+                        type="link"
+                        color="default"
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, 'text')}
+                        icon={<FontSizeOutlined style={iconStyle} />}
+                        style={buttonStyle}
+                        className="toolbar-button"
+                    />
+                </Tooltip>
 
-            {/* Рамка */}
-            <OverlayTrigger placement="bottom" overlay={(props) => renderTooltip(props, 'Frame')}>
-                <Button
-                    variant="light"
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, 'frame')}
-                    style={{ border: 'none', background: 'transparent' }}
-                >
-                    <FiSquare size={24} />
-                </Button>
-            </OverlayTrigger>
+                {/* Рамка */}
+                <Tooltip title="Рамка" placement="right">
+                    <Button
+                        type="link"
+                        color="default"
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, 'frame')}
+                        icon={<BorderOutlined style={iconStyle} />}
+                        style={buttonStyle}
+                        className="toolbar-button"
+                    />
+                </Tooltip>
 
-            {/* Изображение */}
-            <OverlayTrigger placement="bottom" overlay={(props) => renderTooltip(props, 'Image')}>
-                <Button
-                    variant="light"
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, 'image')}
-                    style={{ border: 'none', background: 'transparent' }}
-                >
-                    <FiImage size={24} />
-                </Button>
-            </OverlayTrigger>
+                {/* Изображение */}
+                <Tooltip title="Изображение" placement="right">
+                    <Button
+                        type="link"
+                        color="default"
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, 'image')}
+                        icon={<PictureOutlined style={iconStyle} />}
+                        style={buttonStyle}
+                        className="toolbar-button"
+                    />
+                </Tooltip>
 
-            {/* Фигура */}
-            <OverlayTrigger placement="bottom" overlay={(props) => renderTooltip(props, 'Shape')}>
-                <Button
-                    variant="light"
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, 'shape')}
-                    style={{ border: 'none', background: 'transparent' }}
-                >
-                    <FiPenTool size={24} />
-                </Button>
-            </OverlayTrigger>
+                {/* Фигура */}
+                <Tooltip title="Фигура" placement="right">
+                    <Button
+                        type="link"
+                        color="default"
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, 'shape')}
+                        icon={<EditOutlined style={iconStyle} />}
+                        style={buttonStyle}
+                        className="toolbar-button"
+                    />
+                </Tooltip>
 
-            {/* Карточка */}
-            <OverlayTrigger placement="bottom" overlay={(props) => renderTooltip(props, 'Card')}>
-                <Button
-                    variant="light"
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, 'card')}
-                    style={{ border: 'none', background: 'transparent' }}
-                >
-                    <FiFileText size={24} />
-                </Button>
-            </OverlayTrigger>
+                {/* Карточка */}
+                <Tooltip title="Карточка" placement="right">
+                    <Button
+                        type="link"
+                        color="default"
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, 'card')}
+                        icon={<FileTextOutlined style={iconStyle} />}
+                        style={buttonStyle}
+                        className="toolbar-button"
+                    />
+                </Tooltip>
 
-            {/* Приложение */}
-            <OverlayTrigger placement="bottom" overlay={(props) => renderTooltip(props, 'App')}>
-                <Button
-                    variant="light"
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, 'app_card')}
-                    style={{ border: 'none', background: 'transparent' }}
-                >
-                    <FiGrid size={24} />
-                </Button>
-            </OverlayTrigger>
+                {/* Приложение */}
+                {/*<Tooltip title="Приложение" placement="right">*/}
+                {/*    <Button*/}
+                {/*        type="link"*/}
+                {/*        color="default"*/}
+                {/*        draggable*/}
+                {/*        onDragStart={(e) => handleDragStart(e, 'app_card')}*/}
+                {/*        icon={<AppstoreOutlined style={iconStyle} />}*/}
+                {/*        style={buttonStyle}*/}
+                {/*        className="toolbar-button"*/}
+                {/*    />*/}
+                {/*</Tooltip>*/}
 
-            {/* Стикер */}
-            <OverlayTrigger placement="bottom" overlay={(props) => renderTooltip(props, 'Sticky Note')}>
-                <Button
-                    variant="light"
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, 'sticky_note')}
-                    style={{ border: 'none', background: 'transparent' }}
-                >
-                    <FiClipboard size={24} />
-                </Button>
-            </OverlayTrigger>
+                {/* Стикер */}
+                <Tooltip title="Стикер" placement="right">
+                    <Button
+                        type="link"
+                        color="default"
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, 'sticky_note')}
+                        icon={<FormOutlined style={iconStyle} />}
+                        style={buttonStyle}
+                        className="toolbar-button"
+                    />
+                </Tooltip>
 
-            {/* Удалить последний узел */}
-            <OverlayTrigger placement="bottom" overlay={(props) => renderTooltip(props, 'Delete Last')}>
-                <Button
-                    variant="light"
-                    onClick={removeLastNode}
-                    style={{ border: 'none', background: 'transparent' }}
-                >
-                    <FiTrash2 size={24} color="red" />
-                </Button>
-            </OverlayTrigger>
-        </div>
+                {/*/!* Разделитель *!/*/}
+                {/*<div className="toolbar-divider" style={{ margin: '6px 0', borderTop: '1px solid #f0f0f0', width: '80%' }}></div>*/}
+
+                {/*/!* Удалить последний узел *!/*/}
+                {/*<Tooltip title="Удалить последний" placement="right">*/}
+                {/*    <Button*/}
+                {/*        type="link"*/}
+                {/*        color="default"*/}
+                {/*        onClick={removeLastNode}*/}
+                {/*        icon={<DeleteOutlined style={iconStyle} />}*/}
+                {/*        style={{ ...buttonStyle, color: '#ff4d4f' }}*/}
+                {/*        className="toolbar-button"*/}
+                {/*    />*/}
+                {/*</Tooltip>*/}
+            </div>
+        </>
     );
 };
 

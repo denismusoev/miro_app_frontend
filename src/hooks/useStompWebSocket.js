@@ -14,10 +14,12 @@ import SockJS from 'sockjs-client';
  * @param {string} sockJsUrl - URL SockJS (http://localhost:8080/ws)
  * @param {function} onConnectCallback - вызывается при onConnect (stompClient),
  * @param {object} options - доп. настройки
+ * @param {function} onErrorCallback - обработчик ошибок с сервера
  */
-export default function useStompWebSocket(sockJsUrl, onConnectCallback, options = {}) {
+export default function useStompWebSocket(sockJsUrl, onConnectCallback, options = {}, onErrorCallback) {
     const [connected, setConnected] = useState(false);
     const clientRef = useRef(null);
+    const [lastError, setLastError] = useState(null);
 
     useEffect(() => {
         //console.log('[useStompWebSocket] MOUNT');
@@ -31,12 +33,29 @@ export default function useStompWebSocket(sockJsUrl, onConnectCallback, options 
         const stompClient = new Client({
             webSocketFactory: () => socket,
             reconnectDelay: options.reconnectDelay ?? 5000, // авто-реконнект
-            // connectHeaders: {
-            //     Authorization: `Bearer ${token}`,
-            // },
+            connectHeaders: {
+                Authorization: `Bearer ${token}`,
+            },
             onConnect: (frame) => {
-                //console.log('[useStompWebSocket] onConnect:', frame);
+                console.log('[useStompWebSocket] onConnect:', frame);
                 setConnected(true);
+
+                // Также подписываемся на общий канал ошибок, если контроллер использует его
+                stompClient.subscribe('/user/queue/errors', (errorMsg) => {
+                    try {
+                        const errorData = JSON.parse(errorMsg.body);
+                        console.error('[WebSocket] Получена ошибка из общего канала:', errorData);
+                        setLastError(errorData);
+
+                        // Вызов колбэка если он предоставлен
+                        if (onErrorCallback) {
+                            onErrorCallback(errorData);
+                        }
+                    } catch (error) {
+                        console.error('[WebSocket] Ошибка парсинга сообщения об ошибке:', error);
+                    }
+                });
+
                 // даём возможность вызвать дополнительную логику, например подписки
                 if (onConnectCallback) {
                     onConnectCallback(stompClient);
@@ -44,6 +63,17 @@ export default function useStompWebSocket(sockJsUrl, onConnectCallback, options 
             },
             onStompError: (frame) => {
                 console.error('[useStompWebSocket] STOMP error:', frame.headers['message']);
+
+                // Обрабатываем системные ошибки STOMP как обычные ошибки WebSocket
+                const errorData = {
+                    type: 'ERROR',
+                    data: frame.headers['message'] || 'Ошибка STOMP-соединения'
+                };
+
+                setLastError(errorData);
+                if (onErrorCallback) {
+                    onErrorCallback(errorData);
+                }
             },
             onDisconnect: () => {
                 //console.log('[useStompWebSocket] STOMP disconnected');
@@ -51,7 +81,7 @@ export default function useStompWebSocket(sockJsUrl, onConnectCallback, options 
             },
             debug: (str) => {
                 // При желании раскомментируйте:
-                // console.log('[STOMP DEBUG]', str);
+                console.log('[STOMP DEBUG]', str);
             },
         });
 
@@ -84,5 +114,6 @@ export default function useStompWebSocket(sockJsUrl, onConnectCallback, options 
         stompClient: clientRef.current,
         connected,
         publish,
+        lastError
     };
 }

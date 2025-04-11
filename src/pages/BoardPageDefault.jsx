@@ -1,16 +1,34 @@
 // src/pages/BoardPageDefault.jsx
-import React, { useEffect, useCallback, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useEffect, useCallback, useRef, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import useBoardWebSocket from '../hooks/useBoardWebSocket';
 import { useBoardState } from '../hooks/useBoardState';
+import { useWebSocketErrors } from '../hooks/useWebSocketErrors';
 import Toolbar from '../components/Toolbar';
 import BoardFlow from '../components/BoardFlow';
+import BoardPermissions from '../components/BoardPermissions';
+import ExportButton from '../components/ExportButton';
 import './BoardPageDefault.css';
-import {DragProvider} from "../components/nodes/DragContext";
+import { DragProvider } from "../components/nodes/DragContext";
+import { Alert, Button, Space, Modal } from 'antd';
 
 export default function BoardPageDefault() {
     const { id } = useParams();
+    const navigate = useNavigate();
     const boardStateRef = useRef(null);
+    
+    // Состояние для модального окна с ошибкой доступа
+    const [showAccessDeniedModal, setShowAccessDeniedModal] = useState(false);
+    const [accessError, setAccessError] = useState(null);
+    
+    // Инициализируем хук обработки ошибок WebSocket с дополнительным обработчиком
+    const { handleError, errors, isPermissionError } = useWebSocketErrors(false, (error) => {
+        // Если ошибка связана с правами доступа, показываем модальное окно
+        if (error.isPermissionError) {
+            setAccessError(error);
+            setShowAccessDeniedModal(true);
+        }
+    });
 
     // Обработчик входящих сообщений
     const handleMessage = useCallback((message) => {
@@ -40,8 +58,8 @@ export default function BoardPageDefault() {
         }
     }, []);
 
-    // Подключаемся к WebSocket через наш новый хук
-    const { stompClient, connected, publish } = useBoardWebSocket(id, handleMessage);
+    // Подключаемся к WebSocket через наш обновленный хук с поддержкой обработки ошибок
+    const { stompClient, connected, publish } = useBoardWebSocket(id, handleMessage, handleError);
 
     // Инициализируем логику доски
     const boardState = useBoardState({ stompClient, publish, connected });
@@ -73,16 +91,24 @@ export default function BoardPageDefault() {
             loadBoardData(id);
             loadConnectorData(id);
         }
-    }, [connected, id, loadBoardData]);
+    }, [connected, id, loadBoardData, loadConnectorData]);
 
     const handleDropNewNode = (nodeType, position) => {
         createNewNode(id, nodeType, position);
     };
+    
+    // Обработчик возврата к списку досок
+    const handleBackToBoards = useCallback(() => {
+        navigate('/project');
+    }, [navigate]);
 
     return (
         <DragProvider>
             <div className="board-page-container">
+                <BoardPermissions boardId={id} />
+                
                 <Toolbar boardId={id} addNode={createNewNode} removeLastNode={removeLastNode} />
+                
                 <BoardFlow
                     nodes={nodes}
                     edges={edges}
@@ -96,7 +122,31 @@ export default function BoardPageDefault() {
                     onEdgesDelete={onEdgesDelete}
                     onNodesDelete={onNodesDelete}
                 />
+                
+                <ExportButton />
+                
+                <Modal
+                    title="Нет доступа"
+                    open={showAccessDeniedModal}
+                    onCancel={() => setShowAccessDeniedModal(false)}
+                    footer={[
+                        <Button key="back" onClick={handleBackToBoards}>
+                            Вернуться к списку досок
+                        </Button>,
+                        <Button key="close" type="primary" onClick={() => setShowAccessDeniedModal(false)}>
+                            Закрыть
+                        </Button>
+                    ]}
+                >
+                    <p>
+                        {accessError?.message || 'У вас нет необходимых прав для выполнения этого действия.'}
+                    </p>
+                    <p>
+                        Обратитесь к владельцу доски для получения нужных прав доступа.
+                    </p>
+                </Modal>
             </div>
         </DragProvider>
     );
 }
+

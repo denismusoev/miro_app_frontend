@@ -1,17 +1,51 @@
-/* Например, в BoardPageDefault.css или Toolbar.css */
+/* Обновленная Toolbar, теперь вертикальная и слева */
 .toolbar-floating {
-    position: fixed; /* или absolute, если нужно вписать в контейнер */
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%); /* центрируем по горизонтали */
-    z-index: 9999;               /* чтобы панель была поверх доски */
+    position: fixed;
+    top: 50%;
+    left: 20px;
+    transform: translateY(-50%); /* центрируем по вертикали */
+    z-index: 99;
     display: flex;
+    flex-direction: column; /* Вертикальное расположение */
     align-items: center;
-    padding: 8px 16px;
+    padding: 16px 8px;
     gap: 12px;
     border-radius: 8px;
     background-color: #fff;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    /* при желании, можно добавить полупрозрачный фон */
-    /* backdrop-filter: blur(6px); */
+}
+
+.toolbar-divider {
+    width: 80%; /* Для горизонтальной черты */
+    height: 1px;
+    background-color: #e0e0e0;
+    margin: 5px 0;
+}
+
+/* Стили для кнопок в стиле link */
+.toolbar-button.ant-btn-link {
+    color: rgba(0, 0, 0, 0.65);
+    padding: 0;
+}
+
+/* Убираем подчеркивание и выделение для кнопок-ссылок */
+.toolbar-button.ant-btn-link:hover,
+.toolbar-button.ant-btn-link:focus,
+.toolbar-button.ant-btn-link:active {
+    background-color: transparent !important;
+    text-decoration: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    color: rgba(0, 0, 0, 0.85) !important;
+}
+
+/* Стили для красной кнопки удаления */
+.toolbar-button.ant-btn-link[style*="color: rgb(255, 77, 79)"] {
+    color: #ff4d4f !important;
+}
+
+.toolbar-button.ant-btn-link[style*="color: rgb(255, 77, 79)"]:hover,
+.toolbar-button.ant-btn-link[style*="color: rgb(255, 77, 79)"]:focus,
+.toolbar-button.ant-btn-link[style*="color: rgb(255, 77, 79)"]:active {
+    color: #ff7875 !important; /* Чуть светлее при наведении */
 }

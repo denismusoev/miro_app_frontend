@@ -1,0 +1,3 @@
+.custom-table .ant-table-tbody > tr:hover > td {
+    background-color: #e0e0e0 !important; /* Замените на желаемый темный цвет */
+}

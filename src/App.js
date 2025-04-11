@@ -5,9 +5,20 @@ import ProjectsPage from "./pages/ProjectsPage";
 import ProjectPage from "./pages/ProjectPage";
 import BoardPage from "./pages/BoardPageDefault";
 import InvitePage from "./pages/InvitePage";
+import ProfilePage from "./pages/ProfilePage";
 import {ReactFlowProvider} from "@xyflow/react";
 import MiroAuth from "./pages/MiroAuth";
 import {ProjectProvider} from "./components/ProjectProvider";
+import MainLayout from "./components/MainLayout";
+
+// Компонент-обертка для страниц с MainLayout
+const WithMainLayout = ({ component: Component, ...rest }) => {
+    return (
+        <MainLayout>
+            <Component {...rest} />
+        </MainLayout>
+    );
+};
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -31,11 +42,15 @@ function App() {
                     />
                     <Route
                         path="/projects"
-                        element={<ProjectsPage />}
+                        element={<WithMainLayout component={ProjectsPage} />}
                     />
                     <Route
                         path="/project"
-                        element={<ProjectPage />}
+                        element={<WithMainLayout component={ProjectPage} />}
+                    />
+                    <Route
+                        path="/profile"
+                        element={<WithMainLayout component={ProfilePage} />}
                     />
                     <Route
                         path="/board/:id"
@@ -47,11 +62,11 @@ function App() {
                     />
                     <Route
                         path="/invite/:token"
-                        element={<InvitePage />}
+                        element={<WithMainLayout component={InvitePage} />}
                     />
                     <Route
                         path="/miro_auth"
-                        element={<MiroAuth />}
+                        element={<WithMainLayout component={MiroAuth} />}
                     />
                 </Routes>
             </ProjectProvider>
