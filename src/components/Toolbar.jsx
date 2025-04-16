@@ -73,31 +73,31 @@ const Toolbar = ({ boardId, addNode, removeLastNode }) => {
                     />
                 </Tooltip>
 
-                {/* Рамка */}
-                <Tooltip title="Рамка" placement="right">
-                    <Button
-                        type="link"
-                        color="default"
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, 'frame')}
-                        icon={<BorderOutlined style={iconStyle} />}
-                        style={buttonStyle}
-                        className="toolbar-button"
-                    />
-                </Tooltip>
+                {/*/!* Рамка *!/*/}
+                {/*<Tooltip title="Рамка" placement="right">*/}
+                {/*    <Button*/}
+                {/*        type="link"*/}
+                {/*        color="default"*/}
+                {/*        draggable*/}
+                {/*        onDragStart={(e) => handleDragStart(e, 'frame')}*/}
+                {/*        icon={<BorderOutlined style={iconStyle} />}*/}
+                {/*        style={buttonStyle}*/}
+                {/*        className="toolbar-button"*/}
+                {/*    />*/}
+                {/*</Tooltip>*/}
 
-                {/* Изображение */}
-                <Tooltip title="Изображение" placement="right">
-                    <Button
-                        type="link"
-                        color="default"
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, 'image')}
-                        icon={<PictureOutlined style={iconStyle} />}
-                        style={buttonStyle}
-                        className="toolbar-button"
-                    />
-                </Tooltip>
+                {/*/!* Изображение *!/*/}
+                {/*<Tooltip title="Изображение" placement="right">*/}
+                {/*    <Button*/}
+                {/*        type="link"*/}
+                {/*        color="default"*/}
+                {/*        draggable*/}
+                {/*        onDragStart={(e) => handleDragStart(e, 'image')}*/}
+                {/*        icon={<PictureOutlined style={iconStyle} />}*/}
+                {/*        style={buttonStyle}*/}
+                {/*        className="toolbar-button"*/}
+                {/*    />*/}
+                {/*</Tooltip>*/}
 
                 {/* Фигура */}
                 <Tooltip title="Фигура" placement="right">
@@ -112,18 +112,18 @@ const Toolbar = ({ boardId, addNode, removeLastNode }) => {
                     />
                 </Tooltip>
 
-                {/* Карточка */}
-                <Tooltip title="Карточка" placement="right">
-                    <Button
-                        type="link"
-                        color="default"
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, 'card')}
-                        icon={<FileTextOutlined style={iconStyle} />}
-                        style={buttonStyle}
-                        className="toolbar-button"
-                    />
-                </Tooltip>
+                {/*/!* Карточка *!/*/}
+                {/*<Tooltip title="Карточка" placement="right">*/}
+                {/*    <Button*/}
+                {/*        type="link"*/}
+                {/*        color="default"*/}
+                {/*        draggable*/}
+                {/*        onDragStart={(e) => handleDragStart(e, 'card')}*/}
+                {/*        icon={<FileTextOutlined style={iconStyle} />}*/}
+                {/*        style={buttonStyle}*/}
+                {/*        className="toolbar-button"*/}
+                {/*    />*/}
+                {/*</Tooltip>*/}
 
                 {/* Приложение */}
                 {/*<Tooltip title="Приложение" placement="right">*/}

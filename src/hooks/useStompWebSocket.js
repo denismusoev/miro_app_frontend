@@ -81,7 +81,7 @@ export default function useStompWebSocket(sockJsUrl, onConnectCallback, options 
             },
             debug: (str) => {
                 // При желании раскомментируйте:
-                console.log('[STOMP DEBUG]', str);
+                // console.log('[STOMP DEBUG]', str);
             },
         });
 

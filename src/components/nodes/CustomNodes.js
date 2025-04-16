@@ -8,9 +8,10 @@ import { StickyNoteNode } from './StickyNoteNode';
 
 export const customNodeTypes = {
     text: TextNode,
-    frame: FrameNode,
-    image: ImageNode,
+    // frame: FrameNode,
+    // image: ImageNode,
     shape: ShapeNode,
-    card: CardNode,
+    // card: CardNode,
     sticky_note: StickyNoteNode,
+    // group: FrameNode,
 };

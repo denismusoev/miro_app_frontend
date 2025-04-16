@@ -36,21 +36,21 @@ export default function BoardPageDefault() {
 
         switch (message.type) {
             case 'INITIAL_DATA':
-                boardStateRef.current?.setBoardData(message.data);
+                boardStateRef.current?.handleBoardDataFromServer(message.data);
                 break;
             case 'CREATE_ITEM':
             case 'UPDATE_ITEM':
-                boardStateRef.current?.updateNodeFromWS(message.data);
+                boardStateRef.current?.handleNodeUpdateFromServer(message.data);
                 break;
             case 'DELETE_ITEM':
-                boardStateRef.current?.removeNode?.(message.itemId);
+                boardStateRef.current?.handleNodeRemoveFromServer?.(message.itemId);
                 break;
             case 'CREATE_CONNECTOR':
             case 'UPDATE_CONNECTOR':
-                boardStateRef.current?.addOrUpdateConnector(message.data);
+                boardStateRef.current?.handleConnectionUpdateFromServer(message.data);
                 break;
             case 'DELETE_CONNECTOR':
-                boardStateRef.current?.removeConnector(message.connectorId);
+                boardStateRef.current?.handleConnectionRemoveFromServer(message.connectorId);
                 break;
             default:
                 console.warn('Неизвестный тип сообщения:', message.type);
@@ -82,6 +82,11 @@ export default function BoardPageDefault() {
         onNodeDragStop,
         onEdgesDelete,
         onNodesDelete,
+        handleNodeUpdateFromServer,
+        handleNodeRemoveFromServer,
+        handleConnectionUpdateFromServer,
+        handleConnectionRemoveFromServer,
+        handleBoardDataFromServer,
     } = boardState;
 
     // Загружаем данные доски после установки соединения

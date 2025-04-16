@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { NodeToolbar } from '@xyflow/react';
 import { BaseNode } from './BaseNode';
 import { Select, InputNumber, Popover, Button, Slider } from 'antd';
@@ -18,16 +18,7 @@ import {TfiLayoutLineSolid, TfiLineDashed, TfiLineDotted} from "react-icons/tfi"
 import {TbLineDashed, TbLineDotted} from "react-icons/tb";
 import {FaRegCircle} from "react-icons/fa";
 
-export const ShapeNode = (props) => {
-    const { id, data, selected } = props;
-
-    // Управление видимостью Popover'ов
-    const [textColorVisible, setTextColorVisible] = useState(false);
-    const [fillSettingsVisible, setFillSettingsVisible] = useState(false);
-    const [alignmentVisible, setAlignmentVisible] = useState(false);
-    const [borderSettingsVisible, setBorderSettingsVisible] = useState(false);
-
-    // Извлекаем стили с дефолтными значениями
+export const ShapeNodeCopyImportant = memo(({ id, data, selected, positionAbsoluteX, positionAbsoluteY }) => {
     const {
         fontFamily = FontFamilyType.ARIAL,
         fontSize = 14,
@@ -41,6 +32,12 @@ export const ShapeNode = (props) => {
         borderStyle = BorderStyleType.NONE,
         borderWidth = 1,
     } = data.style || {};
+
+    // Управление видимостью Popover'ов
+    const [textColorVisible, setTextColorVisible] = useState(false);
+    const [fillSettingsVisible, setFillSettingsVisible] = useState(false);
+    const [alignmentVisible, setAlignmentVisible] = useState(false);
+    const [borderSettingsVisible, setBorderSettingsVisible] = useState(false);
 
     // Функция обновления стилей
     const handleStyleChange = (stylePart) => {
@@ -87,7 +84,7 @@ export const ShapeNode = (props) => {
     };
 
     return (
-        <BaseNode id={id} data={data} selected={selected}>
+        <BaseNode id={id} data={data} selected={selected} positionAbsoluteX={positionAbsoluteX} positionAbsoluteY={positionAbsoluteY}>
             <div style={innerStyle}>
                 <NodeToolbar
                     onDoubleClick={(e) => e.stopPropagation()}
@@ -352,4 +349,4 @@ export const ShapeNode = (props) => {
             </div>
         </BaseNode>
     );
-};
+});
