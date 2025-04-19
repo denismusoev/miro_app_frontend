@@ -1,17 +1,11 @@
-// src/hooks/useBoardWebSocket.js
+
 import { useCallback, useState } from 'react';
 import useStompWebSocket from './useStompWebSocket';
 
 const WS_ENDPOINT = 'http://localhost:8080/ws';
 const TOPIC_ENDPOINT = '/topic/board/';
 
-/**
- * Хук для подключения к WebSocket и подписки на топик доски.
- * @param {string} boardId - идентификатор доски
- * @param {Function} onMessage - функция-обработчик входящих сообщений
- * @param {Function} onError - функция-обработчик ошибок с сервера
- * @returns {object} { stompClient, connected, publish, lastError }
- */
+
 export default function useBoardWebSocket(boardId, onMessage, onError) {
     const [lastWSError, setLastWSError] = useState(null);
     

@@ -60,7 +60,7 @@ const Toolbar = ({ boardId, addNode, removeLastNode }) => {
                 padding: '6px 0',
                 width: '60px'
             }}>
-                {/* Текст */}
+                {}
                 <Tooltip title="Текст" placement="right">
                     <Button
                         type="link"
@@ -73,33 +73,33 @@ const Toolbar = ({ boardId, addNode, removeLastNode }) => {
                     />
                 </Tooltip>
 
-                {/*/!* Рамка *!/*/}
-                {/*<Tooltip title="Рамка" placement="right">*/}
-                {/*    <Button*/}
-                {/*        type="link"*/}
-                {/*        color="default"*/}
-                {/*        draggable*/}
-                {/*        onDragStart={(e) => handleDragStart(e, 'frame')}*/}
-                {/*        icon={<BorderOutlined style={iconStyle} />}*/}
-                {/*        style={buttonStyle}*/}
-                {/*        className="toolbar-button"*/}
-                {/*    />*/}
-                {/*</Tooltip>*/}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
 
-                {/*/!* Изображение *!/*/}
-                {/*<Tooltip title="Изображение" placement="right">*/}
-                {/*    <Button*/}
-                {/*        type="link"*/}
-                {/*        color="default"*/}
-                {/*        draggable*/}
-                {/*        onDragStart={(e) => handleDragStart(e, 'image')}*/}
-                {/*        icon={<PictureOutlined style={iconStyle} />}*/}
-                {/*        style={buttonStyle}*/}
-                {/*        className="toolbar-button"*/}
-                {/*    />*/}
-                {/*</Tooltip>*/}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
 
-                {/* Фигура */}
+                {}
                 <Tooltip title="Фигура" placement="right">
                     <Button
                         type="link"
@@ -112,33 +112,33 @@ const Toolbar = ({ boardId, addNode, removeLastNode }) => {
                     />
                 </Tooltip>
 
-                {/*/!* Карточка *!/*/}
-                {/*<Tooltip title="Карточка" placement="right">*/}
-                {/*    <Button*/}
-                {/*        type="link"*/}
-                {/*        color="default"*/}
-                {/*        draggable*/}
-                {/*        onDragStart={(e) => handleDragStart(e, 'card')}*/}
-                {/*        icon={<FileTextOutlined style={iconStyle} />}*/}
-                {/*        style={buttonStyle}*/}
-                {/*        className="toolbar-button"*/}
-                {/*    />*/}
-                {/*</Tooltip>*/}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
 
-                {/* Приложение */}
-                {/*<Tooltip title="Приложение" placement="right">*/}
-                {/*    <Button*/}
-                {/*        type="link"*/}
-                {/*        color="default"*/}
-                {/*        draggable*/}
-                {/*        onDragStart={(e) => handleDragStart(e, 'app_card')}*/}
-                {/*        icon={<AppstoreOutlined style={iconStyle} />}*/}
-                {/*        style={buttonStyle}*/}
-                {/*        className="toolbar-button"*/}
-                {/*    />*/}
-                {/*</Tooltip>*/}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
 
-                {/* Стикер */}
+                {}
                 <Tooltip title="Стикер" placement="right">
                     <Button
                         type="link"
@@ -151,20 +151,20 @@ const Toolbar = ({ boardId, addNode, removeLastNode }) => {
                     />
                 </Tooltip>
 
-                {/*/!* Разделитель *!/*/}
-                {/*<div className="toolbar-divider" style={{ margin: '6px 0', borderTop: '1px solid #f0f0f0', width: '80%' }}></div>*/}
+                {}
+                {}
 
-                {/*/!* Удалить последний узел *!/*/}
-                {/*<Tooltip title="Удалить последний" placement="right">*/}
-                {/*    <Button*/}
-                {/*        type="link"*/}
-                {/*        color="default"*/}
-                {/*        onClick={removeLastNode}*/}
-                {/*        icon={<DeleteOutlined style={iconStyle} />}*/}
-                {/*        style={{ ...buttonStyle, color: '#ff4d4f' }}*/}
-                {/*        className="toolbar-button"*/}
-                {/*    />*/}
-                {/*</Tooltip>*/}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
+                {}
             </div>
         </>
     );

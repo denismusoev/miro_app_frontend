@@ -1,20 +1,16 @@
-// Модели DTO для управления правами пользователей
 
-/**
- * Уровни доступа для проектов и досок
- */
+
+
 export const AccessLevel = {
-    OWNER: 'OWNER',     // Владелец
-    ADMIN: 'ADMIN',     // Администратор
-    WRITE: 'WRITE',     // Редактирование
+    OWNER: 'OWNER',
+    ADMIN: 'ADMIN',
+    WRITE: 'WRITE',
     READ: 'READ',       // Только чтение
     DENIED: 'DENIED',   // Доступ запрещен
     NONE: 'NONE'        // Нет доступа
 };
 
-/**
- * DTO для обновления прав пользователя на проекте
- */
+
 export class ProjectPermissionUpdateDto {
     constructor({ email, role, isExcluded = false }) {
         this.email = email;
@@ -23,9 +19,7 @@ export class ProjectPermissionUpdateDto {
     }
 }
 
-/**
- * DTO для обновления прав пользователя на доске
- */
+
 export class BoardPermissionUpdateDto {
     constructor({ email, role, isExcluded = false }) {
         this.email = email;
@@ -34,9 +28,7 @@ export class BoardPermissionUpdateDto {
     }
 }
 
-/**
- * DTO для представления участника проекта
- */
+
 export class ProjectParticipantDto {
     constructor({ userId, login, email, firstName, lastName, role, isOwner = false }) {
         this.userId = userId;
@@ -48,9 +40,7 @@ export class ProjectParticipantDto {
         this.isOwner = isOwner;
     }
 
-    /**
-     * Получить отображаемое имя пользователя
-     */
+    
     getDisplayName() {
         if (this.firstName && this.lastName) {
             return `${this.firstName} ${this.lastName}`;
@@ -64,9 +54,7 @@ export class ProjectParticipantDto {
     }
 }
 
-/**
- * DTO для представления участника доски
- */
+
 export class BoardParticipantDto {
     constructor({ userId, login, email, firstName, lastName, role, isOwner = false }) {
         this.userId = userId;
@@ -78,9 +66,7 @@ export class BoardParticipantDto {
         this.isOwner = isOwner;
     }
 
-    /**
-     * Получить отображаемое имя пользователя
-     */
+    
     getDisplayName() {
         if (this.firstName && this.lastName) {
             return `${this.firstName} ${this.lastName}`;
@@ -94,9 +80,7 @@ export class BoardParticipantDto {
     }
 }
 
-/**
- * DTO для информации о доступе к проекту
- */
+
 export class ProjectAccessDetailsDto {
     constructor({ accessLevel, isOwner = false, canCreate = false, canView = false, canEdit = false, canDelete = false, canManageRights = false }) {
         this.accessLevel = accessLevel;
@@ -108,9 +92,7 @@ export class ProjectAccessDetailsDto {
         this.canManageRights = canManageRights;
     }
 
-    /**
-     * Создать объект из уровня доступа
-     */
+    
     static fromAccessLevel(accessLevel, isOwner = false) {
         const dto = new ProjectAccessDetailsDto({
             accessLevel,
@@ -162,9 +144,7 @@ export class ProjectAccessDetailsDto {
     }
 }
 
-/**
- * DTO для информации о доступе к доске
- */
+
 export class BoardAccessDetailsDto {
     constructor({ accessLevel, isOwner = false, canCreate = false, canView = false, canEdit = false, canDelete = false, canManageRights = false }) {
         this.accessLevel = accessLevel;
@@ -176,9 +156,7 @@ export class BoardAccessDetailsDto {
         this.canManageRights = canManageRights;
     }
 
-    /**
-     * Создать объект из уровня доступа
-     */
+    
     static fromAccessLevel(accessLevel, isOwner = false) {
         const dto = new BoardAccessDetailsDto({
             accessLevel,
@@ -229,9 +207,7 @@ export class BoardAccessDetailsDto {
         return dto;
     }
 
-    /**
-     * Создать объект из детальной информации о доступе
-     */
+    
     static fromBoardAccessDetails(boardAccessDetails) {
         return new BoardAccessDetailsDto({
             accessLevel: boardAccessDetails.accessLevel,

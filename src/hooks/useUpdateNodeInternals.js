@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useUpdateNodeInternals as useReactFlowUpdateNodeInternals } from '@xyflow/react';
 
-/**
- * Хук для принудительного обновления внутренних элементов узла после перемещения
- * Особенно полезен для правильного отображения узлов внутри фреймов
- * @returns {Function} - функция для запроса обновления узла по ID
- */
+
 export const useUpdateNodeInternals = () => {
     const updateNodeInternals = useReactFlowUpdateNodeInternals();
     const pendingUpdatesRef = useRef(new Set());

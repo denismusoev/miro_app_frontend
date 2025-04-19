@@ -131,7 +131,7 @@ const MainLayout = ({ children }) => {
                 }}
                 theme="light"
             >
-                {/* Логотип */}
+                {}
                 <div style={{ 
                     display: 'flex', 
                     alignItems: 'center', 
@@ -151,9 +151,9 @@ const MainLayout = ({ children }) => {
                     )}
                 </div>
                 
-                {/* <Divider style={{ margin: '0 0 8px 0', borderColor: 'rgba(99, 99, 99, 0.3)' }} /> */}
+                {}
                 
-                {/* Меню навигации */}
+                {}
                 <Menu 
                     theme="light" 
                     mode="inline" 
@@ -169,7 +169,7 @@ const MainLayout = ({ children }) => {
                     }}
                 />
                 
-                {/* Кнопка выхода внизу */}
+                {}
                 <div style={{ 
                     position: 'absolute', 
                     bottom: collapsed ? 68 : 48, 
@@ -178,7 +178,7 @@ const MainLayout = ({ children }) => {
                 }}>
                     <Divider style={{ margin: '8px 0', borderColor: 'rgba(0, 0, 0, 0.3)' }} />
                     
-                    {/* Информация о пользователе */}
+                    {}
                     {!collapsed && userInfo && (userInfo.firstName || userInfo.lastName) && (
                         <>
                             <div style={{ 
@@ -273,7 +273,7 @@ const MainLayout = ({ children }) => {
                     />
                     
                     <Space>
-                        {/* Здесь можно добавить дополнительные элементы управления страницей */}
+                        {}
                     </Space>
                 </Header>
                 

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 const CLIENT_ID = '3458764618211634466';
 const REDIRECT_URI = 'http://localhost:3000/miro_auth'; // тот же, что в серверном коде
-// URL нашего бэкенда (замените порт, если нужно)
+
 const BACKEND_URL = 'http://localhost:8080';
 
 const MiroAuth = () => {
@@ -58,9 +58,7 @@ const MiroAuth = () => {
         window.location.href = `https://miro.com/oauth/authorize?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}`;
     };
 
-    /**
-     * Переключает (добавляет/удаляет) идентификатор доски в массиве selectedBoards
-     */
+    
     const toggleBoardSelection = (boardId) => {
         setSelectedBoards(prevSelected => {
             if (prevSelected.includes(boardId)) {
@@ -73,9 +71,7 @@ const MiroAuth = () => {
         });
     };
 
-    /**
-     * Отправляет выбранные доски на бэкенд для импорта
-     */
+    
     const handleImport = () => {
         if (selectedBoards.length === 0) {
             alert('Пожалуйста, выберите хотя бы одну доску для импорта.');

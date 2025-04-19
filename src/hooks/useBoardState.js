@@ -1,4 +1,3 @@
-// src/hooks/useBoardState.js
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNodesState, useEdgesState, addEdge, applyEdgeChanges } from '@xyflow/react';
 import { getDefaultItem } from '../utils/boardUtils';
@@ -6,14 +5,10 @@ import { itemToNode, nodeToItem } from '../utils/itemMapper';
 import { Position, Geometry, ItemRs } from '../model/ItemDto';
 import { useSafePublish } from './useSafePublish';
 import { attachNodeHandlers } from '../utils/nodeHelpers';
-import { debounce, throttle } from "lodash";
+import { throttle } from "lodash";
 import { useUpdateNodeInternals } from './useUpdateNodeInternals';
 
-/**
- * Сортирует элементы ItemRs так, чтобы родительские элементы всегда шли перед дочерними
- * @param {Array} items - массив элементов ItemRs для сортировки
- * @returns {Array} - отсортированный массив элементов
- */
+
 export const sortItemsWithParentsFirst = (items) => {
     return [...items].sort((a, b) => {
         // Если b является родителем a, то b должен идти раньше
@@ -33,14 +28,8 @@ export const sortItemsWithParentsFirst = (items) => {
     });
 };
 
-/**
- * Сортирует узлы так, чтобы родительские узлы всегда шли перед дочерними
- * @param {Array} nodes - массив узлов для сортировки
- * @returns {Array} - отсортированный массив узлов
- */
-export const sortNodesWithParentsFirst = (nodes) => {
-    console.log(`📊 Начало сортировки ${nodes.length} узлов...`);
 
+export const sortNodesWithParentsFirst = (nodes) => {
     // Создаем карту родительских отношений для диагностики
     const parentChildMap = {};
     nodes.forEach(node => {
@@ -54,12 +43,9 @@ export const sortNodesWithParentsFirst = (nodes) => {
 
     // Выводим информацию о родительских отношениях
     if (Object.keys(parentChildMap).length > 0) {
-        console.log(`🔍 Обнаружены родительские отношения:`);
-        Object.entries(parentChildMap).forEach(([parentId, childIds]) => {
-            console.log(`   Родитель ${parentId} содержит дочерние элементы: ${childIds.join(', ')}`);
+        Object.entries(parentChildMap).forEach(() => {
         });
     } else {
-        console.log(`ℹ️ Нет вложенных узлов, сортировка не требуется`);
     }
 
     // Выполняем сортировку
@@ -80,7 +66,6 @@ export const sortNodesWithParentsFirst = (nodes) => {
         return 0;
     });
 
-    console.log(`✅ Сортировка узлов завершена`);
 
     // Проверяем результаты сортировки
     const nodeMap = {};
@@ -100,18 +85,13 @@ export const sortNodesWithParentsFirst = (nodes) => {
         console.error(`⚠️ Обнаружены проблемы после сортировки:`);
         issues.forEach(issue => console.error(issue));
     } else {
-        console.log(`✅ Порядок узлов корректен после сортировки`);
     }
 
     return sorted;
 };
 
-/**
- * Проверяет порядок узлов и выдает предупреждение, если родительские узлы идут после дочерних
- * @param {Array} nodes - массив узлов для проверки
- */
-export const checkNodesOrder = (nodes) => {
-    console.log(`🔎 Проверка порядка ${nodes.length} узлов...`);
+
+const checkNodesOrder = (nodes) => {
 
     const nodeMap = {};
     nodes.forEach((node, index) => {
@@ -122,11 +102,9 @@ export const checkNodesOrder = (nodes) => {
     const nodesWithParent = nodes.filter(node => node.parentId);
 
     if (nodesWithParent.length === 0) {
-        console.log(`ℹ️ Нет вложенных узлов для проверки`);
         return;
     }
 
-    console.log(`🔍 Проверка порядка ${nodesWithParent.length} узлов с родителями:`);
 
     let hasErrors = false;
 
@@ -135,7 +113,6 @@ export const checkNodesOrder = (nodes) => {
         const parentInfo = nodeMap[parentId];
         const childInfo = nodeMap[node.id];
 
-        console.log(`   Проверка узла ${node.id} с родителем ${parentId}:`);
 
         if (!parentInfo) {
             console.warn(`⚠️ Предупреждение: Родительский узел ${parentId} для узла ${node.id} не найден в массиве узлов`);
@@ -144,27 +121,17 @@ export const checkNodesOrder = (nodes) => {
         }
 
         if (parentInfo.index > childInfo.index) {
-            console.error(`❌ Ошибка порядка узлов: родительский узел ${parentId} (индекс ${parentInfo.index}) идет после дочернего узла ${node.id} (индекс ${childInfo.index})`);
             hasErrors = true;
         } else {
-            console.log(`   ✅ Порядок правильный: родитель ${parentId} (индекс ${parentInfo.index}) идет перед дочерним элементом ${node.id} (индекс ${childInfo.index})`);
         }
     });
 
     if (!hasErrors) {
-        console.log(`✅ Все узлы правильно упорядочены`);
     }
 };
 
-/**
- * Хук управления состоянием доски с узлами и соединениями.
- *
- * @param {object} params
- * @param {object} params.stompClient - клиент для отправки сообщений по WebSocket
- * @param {Function} params.publish - функция публикации с проверкой соединения
- * @param {boolean} params.connected - статус соединения WebSocket
- */
-export const useBoardState = ({ stompClient, publish, connected }) => {
+
+export const useBoardState = ({ publish, connected }) => {
     // ------------- Основные состояния -------------
     const [nodes, setNodes, onNodesChangeInternal] = useNodesState([]);
     const [edges, setEdges, onEdgesChangeInternal] = useEdgesState([]);
@@ -183,7 +150,6 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
     const [nodeChanges, setNodeChanges] = useState({});
 
     // Используем хук для обновления внутренностей узлов
-    const requestNodeUpdate = useUpdateNodeInternals();
 
     // Обновление статуса соединения
     useEffect(() => {
@@ -195,17 +161,13 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
 
     // ------------- Оптимизированные функции обновления -------------
 
-    /**
-     * Создает throttled-версию функции для ограничения частоты вызовов
-     */
-    const createThrottledFunction = useCallback((func, delay = 50) => {
+
+    const createRateLimitedFunction = useCallback((func, delay = 50) => {
         return throttle(func, delay);
     }, []);
 
-    /**
-     * Обновление состояния узла на сервере с throttle
-     */
-    const syncNodeWithServer = useCallback(
+
+    const sendNodeUpdateToServer = useCallback(
         throttle((node) => {
             const payload = nodeToItem(node);
             safePublish('/app/items/update', payload);
@@ -215,10 +177,8 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
 
     // ------------- Преобразователи данных -------------
 
-    /**
-     * Преобразование коннектора в ребро графа
-     */
-    const convertConnectorToEdge = useCallback((connectorRs) => {
+
+    const transformConnectorToEdge = useCallback((connectorRs) => {
         return {
             id: String(connectorRs.id),
             source: String(connectorRs.startItem),
@@ -231,64 +191,7 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
         };
     }, []);
 
-    /**
-     * Подключение обработчиков к узлу
-     */
-    const enrichNodeWithHandlers = useCallback((node) => {
-        return attachNodeHandlers(
-            node,
-            {
-                updateNodeLabel: handleNodeLabelUpdate,
-                updateNodeOnServer: syncNodeWithServer,
-                removeNode: handleNodeRemoval,
-                disableDragging: disableNodeDragging,
-                enableDragging: enableNodeDragging,
-                updateNodeStyle: throttledStyleUpdate,
-                updateNodeGeometry: throttledGeometryUpdate,
-                updateNodeData: throttledDataUpdate
-            }
-        );
-    }, [
-        syncNodeWithServer
-        // Другие зависимости будут добавлены ниже после определения функций
-    ]);
-
-    // ------------- Управление узлами -------------
-
-    /**
-     * Обновление данных узла
-     */
-    const updateNodeData = useCallback((id, newData) => {
-        setNodeChanges(prev => ({
-            ...prev,
-            data: { id, data: newData }
-        }));
-    }, []);
-
-    /**
-     * Обновление стиля узла
-     */
-    const updateNodeStyle = useCallback((id, newStyle) => {
-        setNodeChanges(prev => ({
-            ...prev,
-            style: { id, style: newStyle }
-        }));
-    }, []);
-
-    /**
-     * Обновление геометрии узла
-     */
-    const updateNodeGeometry = useCallback((id, newSize) => {
-        setNodeChanges(prev => ({
-            ...prev,
-            geometry: { id, ...newSize }
-        }));
-    }, []);
-
-    /**
-     * Обновление текстовой метки узла
-     */
-    const handleNodeLabelUpdate = useCallback((id, newLabel) => {
+    const handleNodeLabelChange = useCallback((id, newLabel) => {
         setNodes((prevNodes) =>
             prevNodes.map((node) => {
                 if (node.id !== id) return node;
@@ -300,28 +203,54 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
                     data: { ...node.data, label: newLabel }
                 };
 
-                const nodeWithHandlers = enrichNodeWithHandlers(updatedNode);
-                syncNodeWithServer(nodeWithHandlers);
+                const nodeWithHandlers = attachNodeHandlers(updatedNode);
+                sendNodeUpdateToServer(nodeWithHandlers);
 
                 return nodeWithHandlers;
             })
         );
     }, [setNodes]);
 
-    /**
-     * Удаление узла
-     */
-    const handleNodeRemoval = useCallback((nodeId) => {
+    const handleNodeDelete = useCallback((nodeId) => {
         setNodes((prevNodes) => prevNodes.filter((node) => node.id !== nodeId));
         setEdges((prevEdges) =>
             prevEdges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId)
         );
     }, [setNodes, setEdges]);
 
-    /**
-     * Удаление узла из WebSocket-сообщения
-     */
-    const handleNodeRemoveFromServer = useCallback((nodeId) => {
+
+
+    // ------------- Управление узлами -------------
+
+
+    const queueNodeDataUpdate = useCallback((id, newData) => {
+        setNodeChanges(prev => ({
+            ...prev,
+            data: { id, data: newData }
+        }));
+    }, []);
+
+
+    const queueNodeStyleUpdate = useCallback((id, newStyle) => {
+        setNodeChanges(prev => ({
+            ...prev,
+            style: { id, style: newStyle }
+        }));
+    }, []);
+
+
+    const queueNodeSizeUpdate = useCallback((id, newSize) => {
+        setNodeChanges(prev => ({
+            ...prev,
+            geometry: { id, ...newSize }
+        }));
+    }, []);
+
+
+
+
+
+    const handleServerNodeDelete = useCallback((nodeId) => {
         // Если узел удален локально, игнорируем WS-обновление
         if (pendingNodeUpdatesRef.current.has(nodeId)) {
             pendingNodeUpdatesRef.current.delete(nodeId);
@@ -334,10 +263,8 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
         );
     }, [setNodes, setEdges]);
 
-    /**
-     * Отключение возможности перетаскивания узла
-     */
-    const disableNodeDragging = useCallback((nodeId) => {
+
+    const disableNodeDrag = useCallback((nodeId) => {
         setNodes((prevNodes) =>
             prevNodes.map((node) =>
                 node.id === nodeId ? { ...node, draggable: false } : node
@@ -345,10 +272,8 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
         );
     }, [setNodes]);
 
-    /**
-     * Включение возможности перетаскивания узла
-     */
-    const enableNodeDragging = useCallback((nodeId) => {
+
+    const enableNodeDrag = useCallback((nodeId) => {
         setNodes((prevNodes) =>
             prevNodes.map((node) =>
                 node.id === nodeId ? { ...node, draggable: true } : node
@@ -356,41 +281,73 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
         );
     }, [setNodes]);
 
-    // Создаем throttled-версии функций
-    const throttledDataUpdate = useCallback(
-        createThrottledFunction((id, newData) => updateNodeData(id, newData)),
-        [updateNodeData, createThrottledFunction]
+    /**
+     * Отсоединяет узел от родительского фрейма
+     * @param {string} nodeId - ID узла, который нужно открепить
+     */
+    const detachNodeFromParentFrame = useCallback((nodeId) => {
+        setNodes(prev => {
+            const node = prev.find(n => n.id === nodeId);
+            if (!node || !node.parentId) return prev; // Если узла нет или у него нет родителя, ничего не делаем
+            
+            // Вычисляем абсолютные координаты узла
+            const parentNode = prev.find(n => n.id === node.parentId);
+            if (!parentNode) return prev;
+            
+            // Получаем абсолютную позицию родителя
+            const parentPos = calculateNodeAbsolutePosition(parentNode, prev);
+            
+            // Вычисляем абсолютную позицию узла
+            const absolutePosition = {
+                x: parentPos.x + node.position.x,
+                y: parentPos.y + node.position.y
+            };
+            
+            console.log(`Откреплен узел ${nodeId} от фрейма ${node.parentId}, новая позиция: (${absolutePosition.x}, ${absolutePosition.y})`);
+            
+            // Создаем обновленный узел
+            const updatedNode = {
+                ...node,
+                parentId: undefined,
+                parentNode: undefined,
+                extent: undefined,
+                position: absolutePosition,
+                data: {
+                    ...node.data,
+                    position: absolutePosition
+                }
+            };
+            
+            // Синхронизируем с сервером
+            sendNodeUpdateToServer(updatedNode);
+            
+            // Обновляем состояние
+            return sortNodesWithParentsFirst(
+                prev.map(n => n.id === nodeId ? updatedNode : n)
+            );
+        });
+    }, [setNodes, sendNodeUpdateToServer]);
+
+    // Создаем throttled-версии функций с более понятными именами
+    const updateNodeDataWithRateLimit = useCallback(
+        createRateLimitedFunction((id, newData) => queueNodeDataUpdate(id, newData)),
+        [queueNodeDataUpdate, createRateLimitedFunction]
     );
 
-    const throttledStyleUpdate = useCallback(
-        createThrottledFunction((id, newStyle) => updateNodeStyle(id, newStyle)),
-        [updateNodeStyle, createThrottledFunction]
+    const updateNodeStyleWithRateLimit = useCallback(
+        createRateLimitedFunction((id, newStyle) => queueNodeStyleUpdate(id, newStyle)),
+        [queueNodeStyleUpdate, createRateLimitedFunction]
     );
 
-    const throttledGeometryUpdate = useCallback(
-        createThrottledFunction((id, newSize) => updateNodeGeometry(id, newSize)),
-        [updateNodeGeometry, createThrottledFunction]
+    const updateNodeSizeWithRateLimit = useCallback(
+        createRateLimitedFunction((id, newSize) => queueNodeSizeUpdate(id, newSize)),
+        [queueNodeSizeUpdate, createRateLimitedFunction]
     );
-
-    // Обновляем зависимости для enrichNodeWithHandlers после определения всех функций
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const enrichNodeWithHandlersDeps = [
-        handleNodeLabelUpdate,
-        syncNodeWithServer,
-        handleNodeRemoval,
-        disableNodeDragging,
-        enableNodeDragging,
-        throttledStyleUpdate,
-        throttledGeometryUpdate,
-        throttledDataUpdate
-    ];
 
     // ------------- Операции с узлами -------------
 
-    /**
-     * Создание нового узла
-     */
-    const createNode = useCallback((boardIdForNode, type, position) => {
+
+    const createNodeOnServer = useCallback((boardIdForNode, type, position) => {
         const { data, style, width, height } = getDefaultItem(type);
         const payload = {
             boardId: boardIdForNode,
@@ -404,10 +361,8 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
         safePublish('/app/items/create', payload);
     }, [safePublish]);
 
-    /**
-     * Удаление последнего узла
-     */
-    const removeLastNode = useCallback(() => {
+
+    const removeLastAddedNode = useCallback(() => {
         setNodes((prevNodes) => {
             if (prevNodes.length === 0) return prevNodes;
 
@@ -423,9 +378,7 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
         });
     }, [setNodes, setEdges]);
 
-    /**
-     * Обработка события начала перетаскивания узла
-     */
+
     const handleNodeDragStart = useCallback((event, node) => {
         setNodes((nds) =>
             nds.map((n) =>
@@ -435,28 +388,264 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
     }, [setNodes]);
 
     /**
-     * Обработка события окончания перетаскивания узла
+     * Проверяет пересечение двух прямоугольников
+     * @param {Object} rect1 - Первый прямоугольник {x, y, width, height}
+     * @param {Object} rect2 - Второй прямоугольник {x, y, width, height} 
+     * @returns {boolean} true, если прямоугольники пересекаются
      */
-    const handleNodeDragEnd = useCallback((_, draggedNode) => {
-        pendingNodeUpdatesRef.current.add(draggedNode.id);
-        
-        // Отправка обновленного узла на сервер
-        console.log(`✅ Отправка обновленного узла ${draggedNode.id}`, draggedNode);
-        syncNodeWithServer(draggedNode);
-        
-        // Сортируем узлы для обеспечения правильного порядка родитель-дочерний
-        setNodes(prevNodes => {
-            // Сохраняем выделение
-            const updatedNodes = prevNodes.map((n) => (n.id === draggedNode.id ? { ...n, selected: true } : n));
-            const sortedNodes = sortNodesWithParentsFirst(updatedNodes);
-            return sortedNodes;
-        });
-    }, [syncNodeWithServer, setNodes]);
+    const checkRectIntersection = (rect1, rect2) => {
+        return (
+            rect1.x < rect2.x + rect2.width &&
+            rect1.x + rect1.width > rect2.x &&
+            rect1.y < rect2.y + rect2.height &&
+            rect1.y + rect1.height > rect2.y
+        );
+    };
 
     /**
-     * Обновление узла из WebSocket-сообщения
+     * Проверяет полное вхождение первого прямоугольника во второй
+     * @param {Object} inner - Внутренний прямоугольник {x, y, width, height}
+     * @param {Object} outer - Внешний прямоугольник {x, y, width, height}
+     * @returns {boolean} true, если inner полностью находится внутри outer
      */
-    const handleNodeUpdateFromServer = useCallback((item) => {
+    const checkRectContainment = (inner, outer) => {
+        return (
+            inner.x >= outer.x &&
+            inner.y >= outer.y &&
+            inner.x + inner.width <= outer.x + outer.width &&
+            inner.y + inner.height <= outer.y + outer.height
+        );
+    };
+
+    /**
+     * Обрабатывает перемещение узла во время перетаскивания
+     * Только обновляет позицию, без прикрепления к фрейму
+     */
+    const handleNodeDrag = useCallback((event, draggedNode) => {
+        // Обновляем position в data для отображения корректных координат
+        setNodes(prev =>
+            prev.map(n => {
+                if (n.id !== draggedNode.id) return n;
+                
+                return {
+                    ...n,
+                    data: {
+                        ...n.data,
+                        position: draggedNode.position
+                    }
+                };
+            })
+        );
+        console.log("ПЕРЕМЕЩЕНИЕ УЗЛА");
+    }, [setNodes]);
+
+    /**
+     * Обрабатывает завершение перетаскивания узла
+     * Здесь происходит прикрепление к фрейму, если узел находится внутри него
+     */
+    const handleNodeDragEnd = useCallback((event, draggedNode) => {
+        console.log("ЗАВЕРШЕНИЕ ПЕРЕТАСКИВАНИЯ УЗЛА");
+        pendingNodeUpdatesRef.current.add(draggedNode.id);
+        
+        // Получаем размеры и позицию перетаскиваемого узла
+        const nodeWidth = draggedNode.width || draggedNode.data?.geometry?.width || 100;
+        const nodeHeight = draggedNode.height || draggedNode.data?.geometry?.height || 100;
+        const nodePosition = draggedNode.position;
+        
+        // Обрабатываем только узлы без родителя для проверки пересечения с фреймами
+        if (!draggedNode.parentId) {
+            // Создаем прямоугольник для узла
+            const nodeRect = {
+                x: nodePosition.x,
+                y: nodePosition.y,
+                width: nodeWidth,
+                height: nodeHeight
+            };
+            
+            // Получаем все фреймы, кроме текущего узла и его потомков
+            const frames = nodes.filter(n => 
+                n.type === 'frame' && 
+                n.id !== draggedNode.id && 
+                !checkIfNodeIsAncestor(draggedNode.id, n.id, nodes)
+            );
+            
+            // Проверяем пересечение с каждым фреймом
+            for (const frame of frames) {
+                // Получаем размеры фрейма
+                const frameWidth = frame.width || frame.data?.geometry?.width || 300;
+                const frameHeight = frame.height || frame.data?.geometry?.height || 200;
+                
+                // Получаем позицию фрейма
+                const framePos = { x: frame.position.x, y: frame.position.y };
+                
+                // Создаем прямоугольник для фрейма
+                const frameRect = {
+                    x: framePos.x,
+                    y: framePos.y,
+                    width: frameWidth,
+                    height: frameHeight
+                };
+                
+                // Проверяем полное вхождение узла во фрейм
+                const isContained = checkRectContainment(nodeRect, frameRect);
+                
+                if (isContained) {
+                    console.log(`Прикрепляем узел ${draggedNode.id} к фрейму ${frame.id}`);
+                    
+                    // Вычисляем относительную позицию внутри фрейма
+                    const relativePosition = {
+                        x: nodeRect.x - framePos.x,
+                        y: nodeRect.y - framePos.y
+                    };
+                    
+                    // Обновляем узел
+                    setNodes(prev =>
+                        prev.map(n => {
+                            if (n.id !== draggedNode.id) return n;
+                            
+                            const updated = {
+                                ...n,
+                                parentId: frame.id,
+                                extent: 'parent',
+                                position: relativePosition,
+                                data: {
+                                    ...n.data,
+                                    position: relativePosition
+                                }
+                            };
+                            console.log(updated);
+                            
+                            sendNodeUpdateToServer(updated);
+                            return updated;
+                        })
+                    );
+                    
+                    // Выходим из цикла после нахождения подходящего фрейма
+                    return;
+                }
+            }
+        }
+        
+        // Базовое обновление: просто синхронизируем новые координаты
+        setNodes(prev =>
+            prev.map(n => {
+                if (n.id !== draggedNode.id) return n;
+                
+                // Обновляем также data.position
+                const updated = {
+                    ...n,
+                    data: {
+                        ...n.data,
+                        position: nodePosition
+                    }
+                };
+                
+                sendNodeUpdateToServer(updated);
+                return updated;
+            })
+        );
+        
+        // Сортируем для правильного порядка рендеринга
+        setNodes(prev =>
+            sortNodesWithParentsFirst(
+                prev.map(n =>
+                    n.id === draggedNode.id ? { ...n, selected: true } : n
+                )
+            )
+        );
+        
+        lastDraggedNodeRef.current = draggedNode.id;
+    }, [nodes, setNodes, sendNodeUpdateToServer]);
+
+    
+    const attachHandlersToNode = useCallback((node) => {
+        return attachNodeHandlers(
+            node,
+            {
+                updateNodeLabel: handleNodeLabelChange,
+                updateNodeOnServer: sendNodeUpdateToServer,
+                removeNode: handleNodeDelete,
+                disableDragging: disableNodeDrag,
+                enableDragging: enableNodeDrag,
+                updateNodeStyle: updateNodeStyleWithRateLimit,
+                updateNodeGeometry: updateNodeSizeWithRateLimit,
+                updateNodeData: updateNodeDataWithRateLimit,
+                detachFromParent: detachNodeFromParentFrame
+            }
+        );
+    }, [
+        sendNodeUpdateToServer,
+        handleNodeLabelChange,
+        handleNodeDelete,
+        disableNodeDrag,
+        enableNodeDrag,
+        updateNodeStyleWithRateLimit,
+        updateNodeSizeWithRateLimit,
+        updateNodeDataWithRateLimit,
+        detachNodeFromParentFrame
+    ]);
+
+
+    /**
+     * Возвращает абсолютную позицию узла в координатах канваса,
+     * суммируя его позицию и позиции всех родителей.
+     *
+     * @param {{ id: string, position: { x: number, y: number }, parentNode?: string }} targetNode
+     * @param {Array} allNodes — массив всех узлов
+     * @returns {{ x: number, y: number }}
+     */
+    const calculateNodeAbsolutePosition = (targetNode, allNodes) => {
+        // 1) Строим карту id → узел
+        const nodeMap = new Map(allNodes.map(n => [n.id, n]));
+
+        // 2) Рекурсивная функция подсчёта
+        const computePos = (node, visited = new Set()) => {
+            // Защита от циклов
+            if (visited.has(node.id)) {
+                console.warn(`Циклическая ссылка в родителях узла ${node.id}`);
+                return { x: 0, y: 0 };
+            }
+            visited.add(node.id);
+
+            const { x, y } = node.position;
+
+            // Базовый случай — нет родителя
+            if (!node.parentNode) {
+                return { x, y };
+            }
+
+            const parent = nodeMap.get(node.parentNode);
+            if (!parent) {
+                console.warn(`Родитель ${node.parentNode} для узла ${node.id} не найден`);
+                return { x, y };
+            }
+
+            const parentPos = computePos(parent, visited);
+            return {
+                x: parentPos.x + x,
+                y: parentPos.y + y
+            };
+        };
+
+        return computePos(targetNode);
+    };
+
+
+    // Функция для проверки, является ли один узел предком другого
+    const checkIfNodeIsAncestor = (potentialAncestorId, nodeId, allNodes) => {
+        let currentNode = allNodes.find(n => n.id === nodeId);
+        
+        while (currentNode && currentNode.parentNode) {
+            if (currentNode.parentNode === potentialAncestorId) {
+                return true;
+            }
+            currentNode = allNodes.find(n => n.id === currentNode.parentNode);
+        }
+        
+        return false;
+    };
+
+    const handleServerNodeUpdate = useCallback((item) => {
         const newNode = itemToNode(item);
         
         setNodes((prevNodes) => {
@@ -468,9 +657,12 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
                 return prevNodes;
             }
             
-            const nodeWithFunctions = enrichNodeWithHandlers(
+            const nodeWithFunctions = attachHandlersToNode(
                 { ...newNode, draggable: true, selected: idx >= 0 ? prevNodes[idx].selected : false }
             );
+            if (nodeWithFunctions.parentId) {
+                nodeWithFunctions.extent = "parent";
+            }
             
             originalNodesRef.current[newNode.id] = nodeWithFunctions;
             
@@ -488,16 +680,13 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
             const sortedNodes = sortNodesWithParentsFirst(updatedNodes);
             return sortedNodes;
         });
-    }, [setNodes, enrichNodeWithHandlers]);
+    }, [setNodes, attachHandlersToNode]);
 
-    /**
-     * Обработчик события удаления узлов в React Flow
-     */
-    const handleNodesDelete = useCallback((nodesToDelete) => {
+
+    const handleMultipleNodesDelete = useCallback((nodesToDelete) => {
         nodesToDelete.forEach((node) => {
             const nodeId = node.id;
             if (nodeId) {
-                console.log("ВЫЗЫВАМ УДАЛЕНИЕ NODE")
                 pendingNodeUpdatesRef.current.add(nodeId);
                 safePublish('/app/items/delete', nodeId);
             }
@@ -506,18 +695,10 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
 
     // ------------- Операции с соединениями -------------
 
-    /**
-     * Установка данных соединений
-     */
-    const setConnections = useCallback((connectors) => {
-        const loadedEdges = connectors.map((connector) => convertConnectorToEdge(connector));
-        setEdges(loadedEdges);
-    }, [setEdges, convertConnectorToEdge]);
 
-    /**
-     * Добавление или обновление соединения из WebSocket-сообщения
-     */
-    const handleConnectionUpdateFromServer = useCallback((connectorRs) => {
+
+
+    const handleServerConnectionUpdate = useCallback((connectorRs) => {
         const connectorId = parseInt(connectorRs.id, 10);
         
         setEdges((prevEdges) => {
@@ -529,7 +710,7 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
             
             const stringId = String(connectorId);
             const existingIndex = prevEdges.findIndex((e) => e.id === stringId);
-            const newEdge = convertConnectorToEdge(connectorRs);
+            const newEdge = transformConnectorToEdge(connectorRs);
             
             if (existingIndex >= 0) {
                 // Обновляем существующее соединение
@@ -541,12 +722,10 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
                 return [...prevEdges, newEdge];
             }
         });
-    }, [setEdges, convertConnectorToEdge]);
+    }, [setEdges, transformConnectorToEdge]);
 
-    /**
-     * Удаление соединения из WebSocket-сообщения
-     */
-    const handleConnectionRemoveFromServer = useCallback((connectorId) => {
+
+    const handleServerConnectionDelete = useCallback((connectorId) => {
         // Если соединение удалено локально, игнорируем WS-обновление
         if (pendingConnectorUpdatesRef.current.has(connectorId)) {
             pendingConnectorUpdatesRef.current.delete(connectorId);
@@ -556,10 +735,8 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
         setEdges((prevEdges) => prevEdges.filter((e) => e.id !== connectorId));
     }, [setEdges]);
 
-    /**
-     * Создание нового соединения
-     */
-    const createConnection = useCallback((params) => {
+
+    const createConnectionOnServer = useCallback((params) => {
         const payload = {
             startItem: params.source,
             endItem: params.target,
@@ -569,17 +746,13 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
         safePublish('/app/connectors/create', payload);
     }, [safePublish]);
 
-    /**
-     * Удаление соединения на сервере
-     */
+
     const deleteConnectionOnServer = useCallback((connectorId) => {
         safePublish('/app/connectors/delete', connectorId);
     }, [safePublish]);
 
-    /**
-     * Обновление соединения на сервере
-     */
-    const syncConnectionWithServer = useCallback((connector) => {
+
+    const sendConnectionUpdateToServer = useCallback((connector) => {
         const payload = {
             id: connector.id,
             startItem: connector.source,
@@ -591,41 +764,31 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
         safePublish('/app/connectors/update', payload);
     }, [safePublish]);
 
-    /**
-     * Загрузка данных соединений с сервера
-     */
-    const loadConnectionData = useCallback((targetBoardId) => {
+
+    const requestConnectionsFromServer = useCallback((targetBoardId) => {
         safePublish('/app/connectors/load', targetBoardId);
     }, [safePublish]);
 
-    /**
-     * Обработчик события удаления рёбер в React Flow
-     */
-    const handleEdgesDelete = useCallback((edgesToDelete) => {
+
+    const handleMultipleEdgesDelete = useCallback((edgesToDelete) => {
         edgesToDelete.forEach((edge) => {
             const connectorId = edge.id;
             if (!isNaN(connectorId)) {
-                console.log("ВЫЗЫВАМ УДАЛЕНИЕ EDGE")
                 pendingConnectorUpdatesRef.current.add(connectorId);
                 safePublish('/app/connectors/delete', connectorId);
-                // deleteConnectionOnServer(connectorId);
             }
         });
     }, [safePublish]);
 
     // ------------- Загрузка данных -------------
 
-    /**
-     * Загрузка данных доски с сервера
-     */
-    const loadBoardData = useCallback((targetBoardId) => {
+
+    const requestBoardDataFromServer = useCallback((targetBoardId) => {
         safePublish('/app/board/load', targetBoardId);
     }, [safePublish]);
 
-    /**
-     * Установка полных данных доски из WebSocket-сообщения
-     */
-    const handleBoardDataFromServer = useCallback((fullData) => {
+
+    const initializeBoardFromServerData = useCallback((fullData) => {
         const { items = [], connectors = [] } = fullData;
         
         // Парсим все элементы
@@ -637,8 +800,12 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
         // Создаем узлы с обработчиками
         const loadedNodes = sortedItems.map((item) => {
             const baseNode = itemToNode(item);
-            const nodeWithFunctions = enrichNodeWithHandlers({ ...baseNode, draggable: true });
+            if (baseNode.parentId) {
+                baseNode.extent = "parent";
+            }
+            const nodeWithFunctions = attachHandlersToNode({ ...baseNode, draggable: true });
             originalNodesRef.current[nodeWithFunctions.id] = nodeWithFunctions;
+            console.log(nodeWithFunctions)
             return nodeWithFunctions;
         });
         
@@ -656,28 +823,22 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
         setNodes(loadedNodes);
         setEdges(loadedEdges);
         console.log(loadedNodes);
-    }, [setNodes, setEdges, enrichNodeWithHandlers]);
+    }, [setNodes, setEdges, attachHandlersToNode]);
 
     // ------------- Обработчики событий React Flow -------------
 
-    /**
-     * Обработчик события соединения узлов
-     */
-    const handleConnect = useCallback((params) => {
-        createConnection(params);
-        setEdges((prevEdges) => addEdge({ ...params, type: 'floating' }, prevEdges));
-    }, [setEdges, createConnection]);
 
-    /**
-     * Обработчик события обновления ребра
-     */
+    const handleConnect = useCallback((params) => {
+        createConnectionOnServer(params);
+        setEdges((prevEdges) => addEdge({ ...params, type: 'floating' }, prevEdges));
+    }, [setEdges, createConnectionOnServer]);
+
+
     const handleEdgeUpdate = useCallback((oldEdge, newConnection) => {
         setEdges((prevEdges) => applyEdgeChanges(oldEdge, newConnection, prevEdges));
     }, [setEdges]);
 
-    /**
-     * Обработчик изменения выделения
-     */
+
     const handleSelectionChange = useCallback((elements) => {
         if (Array.isArray(elements)) {
             setSelectedElements(elements);
@@ -694,9 +855,7 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
 
     // ------------- Обработка изменений через useEffect -------------
 
-    /**
-     * Обработка изменений стиля узла
-     */
+
     useEffect(() => {
         if (!nodeChanges.style) return;
 
@@ -716,8 +875,8 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
                     }
                 };
 
-                const nodeWithHandlers = enrichNodeWithHandlers(updatedNode);
-                syncNodeWithServer(nodeWithHandlers);
+                const nodeWithHandlers = attachHandlersToNode(updatedNode);
+                sendNodeUpdateToServer(nodeWithHandlers);
 
                 return { ...nodeWithHandlers, selected: node.selected };
             })
@@ -725,11 +884,9 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
 
         // Сбрасываем изменение после применения
         setNodeChanges(prev => ({ ...prev, style: null }));
-    }, [nodeChanges.style, setNodes, syncNodeWithServer, enrichNodeWithHandlers]);
+    }, [nodeChanges.style, setNodes, sendNodeUpdateToServer, attachHandlersToNode]);
 
-    /**
-     * Обработка изменений данных узла
-     */
+
     useEffect(() => {
         if (!nodeChanges.data) return;
 
@@ -749,8 +906,8 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
                     }
                 };
 
-                const nodeWithHandlers = enrichNodeWithHandlers(updatedNode);
-                syncNodeWithServer(nodeWithHandlers);
+                const nodeWithHandlers = attachHandlersToNode(updatedNode);
+                sendNodeUpdateToServer(nodeWithHandlers);
 
                 return { ...nodeWithHandlers, selected: node.selected };
             })
@@ -758,11 +915,9 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
 
         // Сбрасываем изменение после применения
         setNodeChanges(prev => ({ ...prev, data: null }));
-    }, [nodeChanges.data, setNodes, syncNodeWithServer, enrichNodeWithHandlers]);
+    }, [nodeChanges.data, setNodes, sendNodeUpdateToServer, attachHandlersToNode]);
 
-    /**
-     * Обработка изменений геометрии узла
-     */
+
     useEffect(() => {
         if (!nodeChanges.geometry) return;
 
@@ -787,8 +942,8 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
                     }
                 };
 
-                const nodeWithHandlers = enrichNodeWithHandlers(updatedNode);
-                syncNodeWithServer(nodeWithHandlers);
+                const nodeWithHandlers = attachHandlersToNode(updatedNode);
+                sendNodeUpdateToServer(nodeWithHandlers);
 
                 return { ...nodeWithHandlers, selected: node.selected };
             })
@@ -796,32 +951,7 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
 
         // Сбрасываем изменение после применения
         setNodeChanges(prev => ({ ...prev, geometry: null }));
-    }, [nodeChanges.geometry, setNodes, syncNodeWithServer, enrichNodeWithHandlers]);
-
-    // Принудительное обновление узла, если недавно перемещен внутри фрейма
-    useEffect(() => {
-        const draggedNodeId = lastDraggedNodeRef.current;
-        if (draggedNodeId) {
-            // Сбрасываем после использования
-            lastDraggedNodeRef.current = null;
-
-            // Принудительное обновление узла для правильного отображения
-            setTimeout(() => {
-                setNodes((prevNodes) => {
-                    const nodeToUpdate = prevNodes.find(n => n.id === draggedNodeId);
-                    if (nodeToUpdate && nodeToUpdate.parentId) {
-                        console.log(`🔄 Принудительное обновление узла ${draggedNodeId} внутри фрейма ${nodeToUpdate.parentId}`);
-
-                        // Запрашиваем обновление внутренностей узла
-                        requestNodeUpdate(draggedNodeId);
-
-                        return [...prevNodes]; // Создаем новый массив для триггера обновления React
-                    }
-                    return prevNodes;
-                });
-            }, 50); // Небольшая задержка для обновления DOM
-        }
-    }, [setNodes, requestNodeUpdate]);
+    }, [nodeChanges.geometry, setNodes, sendNodeUpdateToServer, attachHandlersToNode]);
 
     // ------------- Возвращаемые значения и функции -------------
     return {
@@ -836,30 +966,31 @@ export const useBoardState = ({ stompClient, publish, connected }) => {
         onEdgeUpdate: handleEdgeUpdate,
         onSelectionChange: handleSelectionChange,
         onNodeDragStart: handleNodeDragStart,
+        onNodeDrag: handleNodeDrag,
         onNodeDragStop: handleNodeDragEnd,
-        onEdgesDelete: handleEdgesDelete,
-        onNodesDelete: handleNodesDelete,
+        onEdgesDelete: handleMultipleEdgesDelete,
+        onNodesDelete: handleMultipleNodesDelete,
         
         // Операции с узлами
-        createNewNode: createNode,
-        removeNode: handleNodeRemoval,
-        removeLastNode,
-        updateNodeGeometry,
+        createNewNode: createNodeOnServer,
+        removeNode: handleNodeDelete,
+        removeLastNode: removeLastAddedNode,
+        updateNodeGeometry: queueNodeSizeUpdate,
         
         // Обработчики обновлений с сервера
-        handleNodeUpdateFromServer,
-        handleNodeRemoveFromServer,
-        handleConnectionUpdateFromServer,
-        handleConnectionRemoveFromServer,
-        handleBoardDataFromServer,
+        handleNodeUpdateFromServer: handleServerNodeUpdate,
+        handleNodeRemoveFromServer: handleServerNodeDelete,
+        handleConnectionUpdateFromServer: handleServerConnectionUpdate,
+        handleConnectionRemoveFromServer: handleServerConnectionDelete,
+        handleBoardDataFromServer: initializeBoardFromServerData,
         
         // Операции с соединениями
-        createConnector: createConnection,
+        createConnector: createConnectionOnServer,
         deleteConnectorOnServer: deleteConnectionOnServer,
-        updateConnectorOnServer: syncConnectionWithServer,
+        updateConnectorOnServer: sendConnectionUpdateToServer,
         
         // Операции с данными доски
-        loadBoardData,
-        loadConnectorData: loadConnectionData
+        loadBoardData: requestBoardDataFromServer,
+        loadConnectorData: requestConnectionsFromServer
     };
 };

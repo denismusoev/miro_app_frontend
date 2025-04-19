@@ -1,4 +1,4 @@
-// nodeUtils.js
+
 import React, { useRef, useEffect } from 'react';
 
 export const editingInputStyle = {
@@ -41,7 +41,7 @@ export const getFlexAlignByVerticalTextAlign = (verticalAlign) => {
     }
 };
 
-// Простой Popover, который можно использовать для настройки (с Bootstrap‑оформлением)
+
 export function Popover({ isOpen, anchorRef, onClose, children, customWidth = 'fit-content' }) {
     const popoverRef = useRef(null);
 

@@ -1,16 +1,16 @@
-// edgeUtils.js
+
 import { Position } from '@xyflow/react';
 
-// Функция для получения значений по умолчанию, если измеренные размеры отсутствуют
-// function getDefaultMeasured(node) {
-//     switch (node.type) {
-//         case 'text':
-//             return { width: 150, height: 80 };
-//         case 'frame':
-//             return { width: 300, height: 200 };
-//         case 'image':
-//             return { width: 200, height: 150 };
-//         case 'shape':
+
+
+
+
+
+
+
+
+
+
 //             return { width: 120, height: 80 };
 //         case 'card':
 //             return { width: 250, height: 150 };

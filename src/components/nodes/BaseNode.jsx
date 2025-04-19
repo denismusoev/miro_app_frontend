@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useRef, useMemo, memo, useEffect } from 'react';
-import { Handle, Position, NodeResizer } from '@xyflow/react';
+import {Handle, Position, NodeResizer, NodeToolbar} from '@xyflow/react';
 import { throttle } from 'lodash';
 
 // Оптимизированный с помощью memo компонент BaseNode
-export const BaseNode = memo(({ id, data, selected, children, positionAbsoluteX, positionAbsoluteY }) => {
+export const BaseNode = memo(({ id, data, selected, children, positionAbsoluteX, positionAbsoluteY, toolbarContent }) => {
   // Локальное состояние для редактирования текстового содержания
   const [isEditing, setIsEditing] = useState(false);
   const [value, setValue] = useState(data.label || '');
@@ -41,8 +41,17 @@ export const BaseNode = memo(({ id, data, selected, children, positionAbsoluteX,
   
   const handleChange = useCallback((e) => setValue(e.target.value), []);
 
+  // Обработчик для открепления узла от фрейма
+  const handleDetachFromParent = useCallback(() => {
+    console.log(data.functions);
+    if (functionsRef.current?.detachFromParent) {
+      console.log("dsfsdf")
+      functionsRef.current.detachFromParent(id);
+    }
+  }, [id]);
+
   // Обработчик изменения размеров узла с расширенным подходом для предотвращения ResizeObserver loop
-  const handleRawResize = useCallback((e, newSize) => {
+  const onResize = useCallback((e, newSize) => {
     // Используем requestAnimationFrame для более плавного и контролируемого обновления
     // Это помогает избежать слишком быстрых обновлений DOM, которые могут вызвать цикл ResizeObserver
     requestAnimationFrame(() => {
@@ -52,20 +61,6 @@ export const BaseNode = memo(({ id, data, selected, children, positionAbsoluteX,
       });
     });
   }, [id]);
-
-  // Создаем throttled-версию обработчика с более высокой задержкой для надежного предотвращения циклов
-  const onResize = useMemo(() => 
-    throttle(handleRawResize, 25),  // 25ms throttle - лучший баланс для предотвращения ResizeObserver loop
-    [handleRawResize]
-  );
-
-  // Очистка throttled функции при размонтировании компонента
-  useEffect(() => {
-    return () => {
-      // Отменяем все ожидающие вызовы при размонтировании
-      onResize.cancel && onResize.cancel();
-    };
-  }, [onResize]);
 
   // Мемоизированные стили
   const containerStyle = useMemo(() => ({
@@ -131,31 +126,88 @@ export const BaseNode = memo(({ id, data, selected, children, positionAbsoluteX,
 
   // Форматированные координаты
   const formattedCoords = useMemo(() => {
-    if (positionAbsoluteX !== undefined && positionAbsoluteY !== undefined) {
-      return `X: ${Math.round(positionAbsoluteX)}, Y: ${Math.round(positionAbsoluteY)}`;
+    // Используем непосредственно данные из data.position
+    if (data.position) {
+      return `X: ${Math.round(data.position.x)}, Y: ${Math.round(data.position.y)}`;
     }
     return '';
-  }, [positionAbsoluteX, positionAbsoluteY]);
+  }, [data.position?.x, data.position?.y]); // Зависимость от реальных координат
+
+  // Стандартная кнопка открепления от фрейма
+  const detachButton = useMemo(() => 
+    data.parentId && data.type !== 'frame' && data.type !== 'group' && (
+      <button 
+        onClick={handleDetachFromParent}
+        className="detach-button"
+        style={{
+          backgroundColor: '#f44336',
+          color: 'white',
+          border: 'none',
+          borderRadius: '4px',
+          padding: '4px 8px',
+          cursor: 'pointer',
+          fontSize: '12px',
+          fontWeight: 'bold'
+        }}
+      >
+        Открепить от фрейма
+      </button>
+    ), [data.parentId, data.type, handleDetachFromParent]);
+
 
   return (
-    <div style={containerStyle} onDoubleClick={handleDoubleClick} className={isEditing ? 'editing' : ''}>
-      {/* Блок-обёртка для ресайзера (занимает всю область узла) */}
-      <div style={resizerWrapperStyle}>
-        <NodeResizer
-          minHeight={40}
-          minWidth={40}
-          lineStyle={{ borderWidth: '1px' }}
-          color="rgba(59,130,246)"
-          isVisible={selected}
-          onResize={onResize}
-          keepAspectRatio={false}
-        />
-      </div>
+    <div style={containerStyle} onDoubleClick={handleDoubleClick} className={`${isEditing ? 'editing' : ''}`}>
+      {/* Тулбар с заданным содержимым или стандартными кнопками */}
+      <NodeToolbar
+        onDoubleClick={(e) => e.stopPropagation()}
+        isVisible={selected}
+        position="top"
+        className="bg-white rounded shadow-sm"
+        style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '12px' }}
+      >
+        {toolbarContent}
+        {data.parentId && data.type !== 'frame' && data.type !== 'group' && (
+          <button 
+            onClick={handleDetachFromParent}
+            className="detach-button"
+            style={{
+              backgroundColor: '#f44336',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              padding: '4px 8px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontWeight: 'bold'
+            }}
+          >
+            Открепить от фрейма
+          </button>
+        )}
+      </NodeToolbar>
 
-      {/* Основное содержимое узла (например, отрисовка фигуры, текст и т.п.) */}
+      {/* Ресайзер для изменения размеров */}
+      <NodeResizer
+        handleStyle={{
+          width: '10px',  // больше стандартного размера
+          height: '10px', // больше стандартного размера
+          minWidth: '10px',
+          minHeight: '10px',
+          // borderRadius: '50%',
+          border: '2px solid #fff',
+          zIndex: 10
+        }}
+        minHeight={40}
+        minWidth={40}
+        isVisible={selected}
+        onResize={onResize}
+        keepAspectRatio={false}
+      />
+
+      {/* Основное содержимое узла */}
       {children}
 
-      {/* Если редактирование включено, отображаем поле ввода поверх содержимого */}
+      {/* Поле для редактирования текста при двойном клике */}
       {isEditing && (
         <input
           type="text"
@@ -168,14 +220,13 @@ export const BaseNode = memo(({ id, data, selected, children, positionAbsoluteX,
         />
       )}
 
-      {/* Отображение координат */}
+      {/* Отображение текущих координат */}
       {formattedCoords && (
         <div style={coordsStyle}>
           {formattedCoords}
         </div>
       )}
 
-      {/* Хендлы для соединения узлов */}
       <Handle
         type="target"
         position={Position.Left}
@@ -190,4 +241,26 @@ export const BaseNode = memo(({ id, data, selected, children, positionAbsoluteX,
   );
 });
 
-export default BaseNode;
+function ResizeIcon() {
+  return (
+      <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          strokeWidth="2"
+          stroke="#ff0071"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{ position: 'absolute', right: 5, bottom: 5 }}
+      >
+        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+        <polyline points="16 20 20 20 20 16" />
+        <line x1="14" y1="14" x2="20" y2="20" />
+        <polyline points="8 4 4 4 4 8" />
+        <line x1="4" y1="4" x2="10" y2="10" />
+      </svg>
+  );
+}
+

@@ -57,7 +57,7 @@ const BoardFlow = ({
                        onEdgeUpdate,
                        onSelectionChange,
                        onNodeDragStop,
-                       onNodeDragStart,
+                       onNodeDrag,
                        onDropNewNode,// новый пропс
                        onEdgesDelete,
                        onNodesDelete,
@@ -135,6 +135,7 @@ const BoardFlow = ({
         onSelectionChange,
         onEdgesDelete,
         onNodesDelete,
+        onNodeDrag: onNodeDrag,
         onNodeDragStop: onNodeDragStop,
         nodeTypes: customNodeTypes,
         edgeTypes,

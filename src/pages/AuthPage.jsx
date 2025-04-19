@@ -16,17 +16,17 @@ function AuthPage({ onLogin }) {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    // Обработчик входа
+
     const handleLogin = async (values) => {
         setLoading(true);
         try {
-            // Выполняем запрос на вход
+
             const response = await axios.post(`${API_URL}/login`, values);
             
-            // Сохраняем токен
+
             localStorage.setItem("token", response.data.token);
             
-            // Сохраняем базовую информацию из ответа на запрос логина
+
             let userData = {
                 firstName: response.data.firstName || "",
                 lastName: response.data.lastName || "",

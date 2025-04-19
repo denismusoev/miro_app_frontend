@@ -11,7 +11,7 @@ import MiroAuth from "./pages/MiroAuth";
 import {ProjectProvider} from "./components/ProjectProvider";
 import MainLayout from "./components/MainLayout";
 
-// Компонент-обертка для страниц с MainLayout
+
 const WithMainLayout = ({ component: Component, ...rest }) => {
     return (
         <MainLayout>
@@ -70,32 +70,32 @@ function App() {
                     />
                 </Routes>
             </ProjectProvider>
-            {/*<Routes>*/}
-            {/*    <Route*/}
-            {/*        path="/"*/}
-            {/*        element={isAuthenticated ? <Navigate to="/projects" /> : <AuthPage onLogin={() => setIsAuthenticated(true)} />}*/}
-            {/*    />*/}
-            {/*    <Route*/}
-            {/*        path="/projects"*/}
-            {/*        element={isAuthenticated ? <ProjectsPage /> : <Navigate to="/" />}*/}
-            {/*    />*/}
-            {/*    <Route*/}
-            {/*        path="/project/:id"*/}
-            {/*        element={isAuthenticated ? <ProjectPage /> : <Navigate to="/" />}*/}
-            {/*    />*/}
-            {/*    <Route*/}
-            {/*        path="/board/:id"*/}
-            {/*        element={isAuthenticated ?*/}
-            {/*            <ReactFlowProvider>*/}
-            {/*                <BoardPage />*/}
-            {/*            </ReactFlowProvider> :*/}
-            {/*            <Navigate to="/" />}*/}
-            {/*    />*/}
-            {/*    <Route*/}
-            {/*        path="/invite/:token"*/}
-            {/*        element={<InvitePage />}*/}
-            {/*    />*/}
-            {/*</Routes>*/}
+            {}
+            {}
+            {}
+            {}
+            {}
+            {}
+            {}
+            {}
+            {}
+            {}
+            {}
+            {}
+            {}
+            {}
+            {}
+            {}
+            {}
+            {}
+            {}
+            {}
+            {}
+            {}
+            {}
+            {}
+            {}
+            {}
         </Router>
     );
 }

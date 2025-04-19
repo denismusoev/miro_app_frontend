@@ -38,22 +38,22 @@ export class CardData extends Data {
     constructor({
                     assigneeId = null,
                     description = "",
-                    title = "Card", // дефолт "Card" как на сервере
-                    dueDate = new Date(Date.now() + 24 * 60 * 60 * 1000), // текущее время + 1 день
+                    title = "Card",
+                    dueDate = new Date(Date.now() + 24 * 60 * 60 * 1000),
                     dataType = "card"
                 } = {}) {
         super({ dataType });
         this.assigneeId = assigneeId;
         this.description = description;
         this.title = title;
-        // Если dueDate уже является объектом Date или строкой, можно добавить проверку:
+
         this.dueDate = dueDate instanceof Date ? dueDate : new Date(dueDate);
     }
 }
 
 export class FrameData extends Data {
     constructor({
-                    title = "Frame", // дефолт "Frame"
+                    title = "Frame",
                     showContent = true,
                     format = FrameFormatType.CUSTOM,
                     dataType = "frame"
@@ -166,7 +166,7 @@ export class ShapeStyle extends Style {
     constructor({
                     borderColor = "#1a1a1a",
                     borderOpacity = 1.0,
-                    borderStyle = BorderStyleType.NORMAL,      // используем значение из enum
+                    borderStyle = BorderStyleType.NONE,      // используем значение из enum
                     borderWidth = 2.0,
                     color = "#1a1a1a",
                     fillColor = "#ffffff",           // используем значение из enum
@@ -238,6 +238,7 @@ export class ItemRs {
             case 'shape':
                 this.data = new ShapeData(data);
                 this.style = style ? new ShapeStyle(style) : new ShapeStyle();
+                console.log("SHAPE", this.data);
                 break;
             case 'card':
                 this.data = new CardData(data);

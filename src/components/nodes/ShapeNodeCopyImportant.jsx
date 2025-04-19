@@ -93,7 +93,7 @@ export const ShapeNodeCopyImportant = memo(({ id, data, selected, positionAbsolu
                     className="bg-white rounded shadow-sm"
                     style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '12px' }}
                 >
-                    {/* 1. Выбор шрифта */}
+                    {}
                     <Select
                         value={fontFamily}
                         onChange={(val) => handleStyleChange({ fontFamily: val })}
@@ -102,7 +102,7 @@ export const ShapeNodeCopyImportant = memo(({ id, data, selected, positionAbsolu
                         options={fontOptions}
                     />
 
-                    {/* 2. Выбор размера шрифта */}
+                    {}
                     <InputNumber
                         value={fontSize}
                         onChange={(val) => handleStyleChange({ fontSize: val })}
@@ -111,7 +111,7 @@ export const ShapeNodeCopyImportant = memo(({ id, data, selected, positionAbsolu
                         style={{ width: 60, textAlign: 'center' }}
                     />
 
-                    {/* 3. Popover для цвета текста */}
+                    {}
                     <Popover
                         getPopupContainer={(trigger) => trigger.parentElement}
                         content={
@@ -142,12 +142,12 @@ export const ShapeNodeCopyImportant = memo(({ id, data, selected, positionAbsolu
                         </button>
                     </Popover>
 
-                    {/* 4. Popover для заливки: выбор fillOpacity и fillColor */}
+                    {}
                     <Popover
                         getPopupContainer={(trigger) => trigger.parentElement}
                         content={
                             <div style={{ padding: '6px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                {/* Fill Opacity через Slider */}
+                                {}
                                 <div>
                                     <div style={{ fontSize: '12px', marginBottom: '4px' }}>Fill Opacity</div>
                                     <Slider
@@ -158,7 +158,7 @@ export const ShapeNodeCopyImportant = memo(({ id, data, selected, positionAbsolu
                                         onChange={(val) => handleStyleChange({ fillOpacity: val.toString() })}
                                     />
                                 </div>
-                                {/* Fill Color через CirclePicker */}
+                                {}
                                 <div>
                                     <div style={{ fontSize: '12px', marginBottom: '4px' }}>Fill Color</div>
                                     <CirclePicker
@@ -188,12 +188,12 @@ export const ShapeNodeCopyImportant = memo(({ id, data, selected, positionAbsolu
                         </button>
                     </Popover>
 
-                    {/* 5. Popover для выравнивания */}
+                    {}
                     <Popover
                         getPopupContainer={(trigger) => trigger.parentElement}
                         content={
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                {/* Горизонтальное выравнивание */}
+                                {}
                                 <div style={{ display: 'flex', justifyContent: 'space-around'}}>
                                     <Button
                                         type="text"
@@ -214,7 +214,7 @@ export const ShapeNodeCopyImportant = memo(({ id, data, selected, positionAbsolu
                                         <MdFormatAlignRight size={18} style={{ opacity: textAlign === TextAlignType.RIGHT ? 1 : 0.5 }} />
                                     </Button>
                                 </div>
-                                {/* Вертикальное выравнивание */}
+                                {}
                                 <div style={{ display: 'flex', justifyContent: 'space-around'}}>
                                     <Button
                                         type="text"
@@ -261,12 +261,12 @@ export const ShapeNodeCopyImportant = memo(({ id, data, selected, positionAbsolu
                         </button>
                     </Popover>
 
-                    {/* 6. Popover для настроек обводки */}
+                    {}
                     <Popover
                         getPopupContainer={(trigger) => trigger.parentElement}
                         content={
                             <div style={{ padding: '6px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                {/* Border Opacity через Slider */}
+                                {}
                                 <div>
                                     <div style={{ fontSize: '12px', marginBottom: '4px' }}>Border Opacity</div>
                                     <Slider
@@ -277,7 +277,7 @@ export const ShapeNodeCopyImportant = memo(({ id, data, selected, positionAbsolu
                                         onChange={(val) => handleStyleChange({ borderOpacity: val.toString() })}
                                     />
                                 </div>
-                                {/* Border Style через кнопки */}
+                                {}
                                 <div>
                                     <div style={{ fontSize: '12px', marginBottom: '4px' }}>Border Style</div>
                                     <div style={{ display: 'flex', gap: '8px' }}>
@@ -301,7 +301,7 @@ export const ShapeNodeCopyImportant = memo(({ id, data, selected, positionAbsolu
                                         </Button>
                                     </div>
                                 </div>
-                                {/* Border Width через Slider */}
+                                {}
                                 <div>
                                     <div style={{ fontSize: '12px', marginBottom: '4px' }}>Border Width</div>
                                     <Slider
@@ -313,7 +313,7 @@ export const ShapeNodeCopyImportant = memo(({ id, data, selected, positionAbsolu
                                         disabled={borderStyle === BorderStyleType.NONE}
                                     />
                                 </div>
-                                {/* Border Color через CirclePicker */}
+                                {}
                                 <div>
                                     <div style={{ fontSize: '12px', marginBottom: '4px' }}>Border Color</div>
                                     <CirclePicker

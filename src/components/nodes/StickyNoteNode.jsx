@@ -222,8 +222,143 @@ export const StickyNoteNode = memo(({ id, data, selected, positionAbsoluteX, pos
     getTextLines(data.label, width - 32), // 32 = padding * 2
   [data.label, width, getTextLines]);
 
+  // Создаем мемоизированный тулбар
+  const stickyNoteToolbar = useMemo(() => (
+    <NodeToolbar
+      onDoubleClick={(e) => e.stopPropagation()}
+      isVisible={selected}
+      position="top"
+      className="bg-white rounded shadow-sm"
+      style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '12px' }}
+    >
+      {/* Размер шрифта */}
+      <InputNumber
+        value={fontSize}
+        onChange={handleFontSizeChange}
+        min={1}
+        max={64}
+        style={{ width: 60, textAlign: 'center' }}
+      />
+
+      {/* Выбор шрифта */}
+      <Select
+        value={fontFamily}
+        onChange={handleFontFamilyChange}
+        style={{ width: 120 }}
+        options={fontOptions}
+      />
+
+      {/* Цвет заливки */}
+      <Popover
+        getPopupContainer={(trigger) => trigger.parentElement}
+        content={
+          <CirclePicker
+            color={fillColor}
+            onChangeComplete={handleFillColorChange}
+            colors={[
+              "#FFF9B1", "#F5D128", "#FF9D48", 
+              "#F16C7F", "#EA94BB", "#A6CCF5", 
+              "#7B92FF", "#67C6C0", "#93D275", 
+              "#D0E17A", "#D5F692"
+            ]}
+          />
+        }
+        title="Fill Color"
+        trigger="click"
+        open={colorPickerVisible}
+        onOpenChange={setColorPickerVisible}
+      >
+        <Button icon={<BgColorsOutlined />} />
+      </Popover>
+
+      {/* Выравнивание */}
+      <Popover
+        getPopupContainer={(trigger) => trigger.parentElement}
+        content={alignmentPopoverContent}
+        title="Alignment"
+        trigger="click"
+        open={alignmentVisible}
+        onOpenChange={setAlignmentVisible}
+      >
+        <Button>Alignment</Button>
+      </Popover>
+    </NodeToolbar>
+  ), [
+    selected, fontSize, fontFamily, fillColor, colorPickerVisible, alignmentVisible,
+    handleFontSizeChange, handleFontFamilyChange, handleFillColorChange,
+    alignmentPopoverContent, setColorPickerVisible, setAlignmentVisible
+  ]);
+
+  // Создаем только содержимое тулбара
+  const stickyNoteToolbarContent = useMemo(() => (
+    <>
+      {/* Размер шрифта */}
+      <InputNumber
+        value={fontSize}
+        onChange={handleFontSizeChange}
+        min={1}
+        max={64}
+        style={{ width: 60, textAlign: 'center' }}
+      />
+
+      {/* Выбор шрифта */}
+      <Select
+        value={fontFamily}
+        onChange={handleFontFamilyChange}
+        style={{ width: 120 }}
+        options={fontOptions}
+      />
+
+      {/* Цвет заливки */}
+      <Popover
+        getPopupContainer={(trigger) => trigger.parentElement}
+        content={
+          <CirclePicker
+            color={fillColor}
+            onChangeComplete={handleFillColorChange}
+            colors={[
+              "#FFF9B1", "#F5D128", "#FF9D48", 
+              "#F16C7F", "#EA94BB", "#A6CCF5", 
+              "#7B92FF", "#67C6C0", "#93D275", 
+              "#D0E17A", "#D5F692"
+            ]}
+          />
+        }
+        title="Fill Color"
+        trigger="click"
+        open={colorPickerVisible}
+        onOpenChange={setColorPickerVisible}
+      >
+        <Button icon={<BgColorsOutlined />} />
+      </Popover>
+
+      {/* Выравнивание */}
+      <Popover
+        getPopupContainer={(trigger) => trigger.parentElement}
+        content={alignmentPopoverContent}
+        title="Alignment"
+        trigger="click"
+        open={alignmentVisible}
+        onOpenChange={setAlignmentVisible}
+      >
+        <Button>Alignment</Button>
+      </Popover>
+    </>
+  ), [
+    fontSize, fontFamily, fillColor, colorPickerVisible, alignmentVisible,
+    handleFontSizeChange, handleFontFamilyChange, handleFillColorChange,
+    alignmentPopoverContent, setColorPickerVisible, setAlignmentVisible
+  ]);
+
   return (
-    <BaseNode id={id} data={data} selected={selected} positionAbsoluteX={positionAbsoluteX} positionAbsoluteY={positionAbsoluteY}>
+    <BaseNode 
+      id={id} 
+      data={data} 
+      selected={selected} 
+      positionAbsoluteX={positionAbsoluteX} 
+      positionAbsoluteY={positionAbsoluteY}
+      toolbarContent={stickyNoteToolbarContent}
+    >
       <svg width={width} height={height} style={{ overflow: 'visible' }}>
         <StickyNoteShadowFilter />
         
@@ -239,7 +374,7 @@ export const StickyNoteNode = memo(({ id, data, selected, positionAbsoluteX, pos
           filter="url(#stickyNoteShadow)"
         />
         
-        {/* Текст стикера */}
+        {/* Текст */}
         <text {...textAttrs}>
           {textLines.map((line, index) => (
             <tspan 
@@ -252,66 +387,6 @@ export const StickyNoteNode = memo(({ id, data, selected, positionAbsoluteX, pos
           ))}
         </text>
       </svg>
-
-      <NodeToolbar
-        onDoubleClick={(e) => e.stopPropagation()}
-        isVisible={selected}
-        position="top"
-        className="bg-white rounded shadow-sm"
-        style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '12px' }}
-      >
-        {/* Размер шрифта */}
-        <InputNumber
-          value={fontSize}
-          onChange={handleFontSizeChange}
-          min={1}
-          max={64}
-          style={{ width: 60, textAlign: 'center' }}
-        />
-
-        {/* Выбор шрифта */}
-        <Select
-          value={fontFamily}
-          onChange={handleFontFamilyChange}
-          style={{ width: 120 }}
-          options={fontOptions}
-        />
-
-        {/* Цвет заливки */}
-        <Popover
-          getPopupContainer={(trigger) => trigger.parentElement}
-          content={
-            <CirclePicker
-              color={fillColor}
-              onChangeComplete={handleFillColorChange}
-              colors={[
-                "#FFF9B1", "#F5D128", "#FF9D48", 
-                "#F16C7F", "#EA94BB", "#A6CCF5", 
-                "#7B92FF", "#67C6C0", "#93D275", 
-                "#D0E17A", "#D5F692"
-              ]}
-            />
-          }
-          title="Fill Color"
-          trigger="click"
-          open={colorPickerVisible}
-          onOpenChange={setColorPickerVisible}
-        >
-          <Button icon={<BgColorsOutlined />} />
-        </Popover>
-
-        {/* Выравнивание текста */}
-        <Popover
-          getPopupContainer={(trigger) => trigger.parentElement}
-          content={alignmentPopoverContent}
-          title="Alignment"
-          trigger="click"
-          open={alignmentVisible}
-          onOpenChange={setAlignmentVisible}
-        >
-          <Button>Alignment</Button>
-        </Popover>
-      </NodeToolbar>
     </BaseNode>
   );
 });

@@ -1,12 +1,12 @@
-// src/dto/Enums.js
 
-// --------------------
-// Если на сервере BorderStyleType:
-//   NORMAL("normal "),
-//   DOTTED("dotted "),
-//   DASHED("dashed");
-// то на клиенте обычно повторяем "normal", "dotted", "dashed" (без лишних пробелов).
-// --------------------
+
+
+
+
+
+
+
+
 export const BorderStyleType = {
     NONE: "none",
     DOTTED: "dotted",
@@ -25,9 +25,9 @@ export const FrameFormatType = {
     RATIO_16X9: "ratio_16x9",
 };
 
-// --------------------
-// ColorType
-// --------------------
+
+
+
 export const ColorType = {
     F5F6F8: "#F5F6F8",
     D5F692: "#D5F692",
@@ -48,7 +48,7 @@ export const ColorType = {
     WHITE: "#FFFFFF",
 };
 
-// --------------------
+
 // FontFamilyType
 // --------------------
 export const FontFamilyType = {

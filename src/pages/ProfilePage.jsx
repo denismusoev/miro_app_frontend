@@ -25,12 +25,12 @@ const ProfilePage = () => {
     const [updating, setUpdating] = useState(false);
     const [activeTabKey, setActiveTabKey] = useState('profile');
 
-    // Обработчик изменения активного таба
+
     const onTabChange = (key) => {
         setActiveTabKey(key);
     };
 
-    // Загрузка данных пользователя
+
     useEffect(() => {
         const fetchUserData = async () => {
             setLoading(true);
@@ -39,7 +39,7 @@ const ProfilePage = () => {
                 const userData = response.data;
                 setUser(userData);
                 
-                // Заполняем форму данными пользователя
+
                 form.setFieldsValue({
                     firstName: userData.firstName || '',
                     lastName: userData.lastName || '',
@@ -57,14 +57,14 @@ const ProfilePage = () => {
         fetchUserData();
     }, [form]);
 
-    // Обработчик отправки формы обновления профиля
+
     const handleSubmit = async (values) => {
         setUpdating(true);
         try {
             await updateUserProfile(values);
             message.success('Профиль успешно обновлен');
             
-            // Обновляем информацию о пользователе в localStorage
+
             const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
             const updatedUserInfo = {
                 ...userInfo,
@@ -75,7 +75,7 @@ const ProfilePage = () => {
             };
             localStorage.setItem('user', JSON.stringify(updatedUserInfo));
             
-            // Обновляем состояние пользователя
+
             setUser({
                 ...user,
                 ...values
@@ -93,7 +93,7 @@ const ProfilePage = () => {
         }
     };
 
-    // Обработчик отправки формы смены пароля
+
     const handlePasswordChange = async (values) => {
         setUpdating(true);
         try {

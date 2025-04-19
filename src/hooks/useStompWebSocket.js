@@ -3,19 +3,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
-/**
- * Хук для подключения к SockJS + STOMP.
- * - Не подписывается «автоматически» на серверные топики,
- *   это даёт больше контроля — вы вызываете subscribe(...) когда нужно.
- * - Предоставляет onConnectCallback, чтобы выполнить логику
- *   после реального установления соединения (например, подписка).
- * - Предоставляет publish() с проверкой connected.
- *
- * @param {string} sockJsUrl - URL SockJS (http://localhost:8080/ws)
- * @param {function} onConnectCallback - вызывается при onConnect (stompClient),
- * @param {object} options - доп. настройки
- * @param {function} onErrorCallback - обработчик ошибок с сервера
- */
+
 export default function useStompWebSocket(sockJsUrl, onConnectCallback, options = {}, onErrorCallback) {
     const [connected, setConnected] = useState(false);
     const clientRef = useRef(null);
@@ -96,9 +84,7 @@ export default function useStompWebSocket(sockJsUrl, onConnectCallback, options 
         };
     }, [sockJsUrl, onConnectCallback, options.reconnectDelay]);
 
-    /**
-     * Функция publish с проверкой, что клиент подключён.
-     */
+    
     const publish = useCallback((destination, body) => {
         // if (!connected) {
         //     console.warn('[useStompWebSocket] Попытка publish, но нет соединения');

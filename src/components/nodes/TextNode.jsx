@@ -241,6 +241,152 @@ export const TextNode = memo(({ id, data, selected, positionAbsoluteX, positionA
     { value: TextAlignType.RIGHT, label: 'По правому краю' },
   ], []);
 
+  // Отделяем NodeToolbar в отдельный мемоизированный компонент
+  const textNodeToolbar = useMemo(() => (
+    <NodeToolbar
+      onDoubleClick={(e) => e.stopPropagation()}
+      isVisible={selected}
+      position="top"
+      className="bg-white rounded shadow-sm"
+      style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '12px' }}
+    >
+      {/* Размер шрифта */}
+      <InputNumber
+        value={fontSize}
+        onChange={handleFontSizeChange}
+        min={1}
+        variant={"filled"}
+        style={{ width: 60, textAlign: 'center' }}
+      />
+
+      {/* Выбор шрифта */}
+      <Select
+        value={fontFamily}
+        onChange={handleFontFamilyChange}
+        variant={"filled"}
+        style={{ width: 120, minWidth: 80 }}
+        options={fontOptions}
+      />
+
+      {/* Цвет текста */}
+      <Popover
+        getPopupContainer={(trigger) => trigger.parentElement}
+        content={textColorPopoverContent}
+        title="Цвет текста"
+        trigger="click"
+      >
+        <Button 
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          icon={<FontColorsOutlined style={{ fontSize: '20px' }} />} 
+        />
+      </Popover>
+
+      {/* Настройки заливки */}
+      <Popover
+        getPopupContainer={(trigger) => trigger.parentElement}
+        content={fillSettingsPopoverContent}
+        title="Настройки заливки"
+        trigger="click"
+      >
+        <Button 
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          icon={<BgColorsOutlined style={{ fontSize: '20px' }} />} 
+        />
+      </Popover>
+
+      {/* Выравнивание текста */}
+      <Select
+        value={textAlign}
+        onChange={handleTextAlignChange}
+        style={{ width: 120 }}
+        variant={"filled"}
+        options={alignOptionsLocalized}
+      />
+    </NodeToolbar>
+  ), [
+    selected, fontSize, fontFamily, textAlign,
+    handleFontSizeChange, handleFontFamilyChange, handleTextAlignChange,
+    textColorPopoverContent, fillSettingsPopoverContent, alignOptionsLocalized
+  ]);
+
+  // Заменяем на содержимое тулбара
+  const textNodeToolbarContent = useMemo(() => (
+    <>
+      {/* Размер шрифта */}
+      <InputNumber
+        value={fontSize}
+        onChange={handleFontSizeChange}
+        min={1}
+        variant={"filled"}
+        style={{ width: 60, textAlign: 'center' }}
+      />
+
+      {/* Выбор шрифта */}
+      <Select
+        value={fontFamily}
+        onChange={handleFontFamilyChange}
+        variant={"filled"}
+        style={{ width: 120, minWidth: 80 }}
+        options={fontOptions}
+      />
+
+      {/* Цвет текста */}
+      <Popover
+        getPopupContainer={(trigger) => trigger.parentElement}
+        content={textColorPopoverContent}
+        title="Цвет текста"
+        trigger="click"
+      >
+        <Button 
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          icon={<FontColorsOutlined style={{ fontSize: '20px' }} />} 
+        />
+      </Popover>
+
+      {/* Настройки заливки */}
+      <Popover
+        getPopupContainer={(trigger) => trigger.parentElement}
+        content={fillSettingsPopoverContent}
+        title="Настройки заливки"
+        trigger="click"
+      >
+        <Button 
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          icon={<BgColorsOutlined style={{ fontSize: '20px' }} />} 
+        />
+      </Popover>
+
+      {/* Выравнивание текста */}
+      <Select
+        value={textAlign}
+        onChange={handleTextAlignChange}
+        style={{ width: 120 }}
+        variant={"filled"}
+        options={alignOptionsLocalized}
+      />
+    </>
+  ), [
+    fontSize, fontFamily, textAlign,
+    handleFontSizeChange, handleFontFamilyChange, handleTextAlignChange,
+    textColorPopoverContent, fillSettingsPopoverContent, alignOptionsLocalized
+  ]);
+
   // Эффект для очистки ресурсов при размонтировании компонента
   useEffect(() => {
     let isMounted = true;
@@ -252,12 +398,19 @@ export const TextNode = memo(({ id, data, selected, positionAbsoluteX, positionA
   }, []);
 
   return (
-    <BaseNode id={id} data={data} selected={selected} positionAbsoluteX={positionAbsoluteX} positionAbsoluteY={positionAbsoluteY}>
+    <BaseNode 
+      id={id} 
+      data={data} 
+      selected={selected} 
+      positionAbsoluteX={positionAbsoluteX} 
+      positionAbsoluteY={positionAbsoluteY} 
+      toolbarContent={textNodeToolbarContent}
+    >
       <div style={{ width: '100%', height: '100%' }}>
         <svg {...svgAttributes}>
-          {/* Фон узла – просто прямоугольник с заливкой */}
+          {/* Фон */}
           <rect {...rectAttributes} />
-          {/* Текст, отрисовываемый с учетом всех стилей */}
+          {/* Текст */}
           <text
             x={textX}
             y={textY}
@@ -268,75 +421,6 @@ export const TextNode = memo(({ id, data, selected, positionAbsoluteX, positionA
             {data.label || ''}
           </text>
         </svg>
-
-        <NodeToolbar
-          onDoubleClick={(e) => e.stopPropagation()}
-          isVisible={selected}
-          position="top"
-          className="bg-white rounded shadow-sm"
-          style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '12px' }}
-        >
-          {/* Элемент для настройки размера шрифта */}
-          <InputNumber
-            value={fontSize}
-            onChange={handleFontSizeChange}
-            min={1}
-            variant={"filled"}
-            style={{ width: 60, textAlign: 'center' }}
-          />
-
-          {/* Выбор шрифта */}
-          <Select
-            value={fontFamily}
-            onChange={handleFontFamilyChange}
-            variant={"filled"}
-            style={{ width: 120, minWidth: 80 }}
-            options={fontOptions}
-          />
-
-          {/* Цвет текста */}
-          <Popover
-            getPopupContainer={(trigger) => trigger.parentElement}
-            content={textColorPopoverContent}
-            title="Цвет текста"
-            trigger="click"
-          >
-            <Button 
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              icon={<FontColorsOutlined style={{ fontSize: '20px' }} />} 
-            />
-          </Popover>
-
-          {/* Настройки заливки */}
-          <Popover
-            getPopupContainer={(trigger) => trigger.parentElement}
-            content={fillSettingsPopoverContent}
-            title="Настройки заливки"
-            trigger="click"
-          >
-            <Button 
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              icon={<BgColorsOutlined style={{ fontSize: '20px' }} />} 
-            />
-          </Popover>
-
-          {/* Выравнивание текста по горизонтали */}
-          <Select
-            value={textAlign}
-            onChange={handleTextAlignChange}
-            style={{ width: 120 }}
-            variant={"filled"}
-            options={alignOptionsLocalized}
-          />
-        </NodeToolbar>
       </div>
     </BaseNode>
   );

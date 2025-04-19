@@ -12,7 +12,7 @@ const getAuthHeaders = () => {
     };
 };
 
-// Функции для проектов
+
 export const fetchProjects = async () => {
     return axios.get(`${API_BASE_URL}/projects/my`, getAuthHeaders());
 };
@@ -41,7 +41,7 @@ export const deleteProject = async (id) => {
     return axios.delete(`${API_BASE_URL}/projects/${id}`, getAuthHeaders());
 };
 
-// Функции для досок
+
 export const fetchBoards = async (id) => {
     return axios.get(`${API_BASE_URL}/boards/my`, getAuthHeaders());
 };
@@ -66,13 +66,13 @@ export const deleteBoard = async (id) => {
     return axios.delete(`${API_BASE_URL}/boards/${id}`, getAuthHeaders());
 };
 
-// Функции для invite-ссылок
+
 export const createInvite = async (inviteData) => {
     return axios.post(`${API_BASE_URL}/invites`, inviteData, getAuthHeaders());
 };
 
 export const getInvite = async (params) => {
-    // params: { projectId, boardId, role }
+
     return axios.get(`${API_BASE_URL}/invites`, { params, ...getAuthHeaders() });
 };
 
@@ -88,7 +88,7 @@ export const deactivateInvite = async (token) => {
     return axios.delete(`${API_BASE_URL}/invites/${token}`, getAuthHeaders());
 };
 
-// Функции для управления правами пользователей на проекте
+
 export const getProjectParticipants = async (projectId) => {
     return axios.get(`${API_BASE_URL}/permissions/project/${projectId}/participants`, getAuthHeaders());
 };
@@ -109,7 +109,7 @@ export const removeUserFromProject = async (projectId, email) => {
     return axios.delete(`${API_BASE_URL}/permissions/project/${projectId}/users?email=${email}`, getAuthHeaders());
 };
 
-// Функции для управления правами пользователей на доске
+
 export const getBoardParticipants = async (boardId) => {
     return axios.get(`${API_BASE_URL}/permissions/board/${boardId}/participants`, getAuthHeaders());
 };

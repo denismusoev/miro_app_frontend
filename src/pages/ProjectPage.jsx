@@ -66,15 +66,13 @@ import {ProjectContext} from "../components/ProjectProvider";
 import ProjectPermissions from "../components/ProjectPermissions";
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/ru'; // Импортируем русскую локализацию
+import 'dayjs/locale/ru';
 
-// Инициализация плагина relativeTime для форматирования дат
+
 dayjs.extend(relativeTime);
-dayjs.locale('ru'); // Устанавливаем русскую локализацию
+dayjs.locale('ru');
 
-/**
- * Константы для Miro
- */
+
 const CLIENT_ID = "3458764618211634466";
 const REDIRECT_BASE = "http://localhost:3000/project"; // Ваш фронтенд URL
 const BACKEND_URL = "http://localhost:8080";   // Ваш бэкенд
@@ -1077,7 +1075,7 @@ function ProjectPage() {
                             return (
         <div style={{ background: 'white', padding: '24px' }}>
             <div>
-                {/* Информация о проекте */}
+                {}
                 {projectInfo && (
                     <div style={{ marginBottom: 24 }}>
                         <Row align="middle" gutter={16}>
@@ -1162,7 +1160,7 @@ function ProjectPage() {
                             </Button>
                         </div>
 
-                        {/* Форма поиска досок */}
+                        {}
                         <Card 
                             title={<Text strong>Поиск досок</Text>} 
                             bordered={false} 
@@ -1295,7 +1293,7 @@ function ProjectPage() {
                     </TabPane>
                 </Tabs>
 
-            {/* Модальное окно для создания/редактирования локальной доски */}
+            {}
                 <Modal
                     title={editMode ? "Редактировать доску" : "Создать доску"}
                     open={showModal}
@@ -1332,7 +1330,7 @@ function ProjectPage() {
                     </Form>
             </Modal>
 
-            {/* Модальное окно для импорта досок из Miro */}
+            {}
                 <Modal
                     title="Импорт досок из Miro"
                     open={showMiroModal}
@@ -1404,7 +1402,7 @@ function ProjectPage() {
                     )}
                 </Modal>
 
-                {/* Модальное окно для создания ссылки-приглашения */}
+                {}
                 <Modal
                     title={<div><LinkOutlined /> {existingLinkData ? "Управление ссылкой-приглашением" : "Создать ссылку-приглашение"}</div>}
                     open={inviteLinkModalVisible}
@@ -1429,7 +1427,7 @@ function ProjectPage() {
                                 maxUsages: 1
                             }}
                         >
-                            {/* Секция для быстрого переключения между ролями */}
+                            {}
                             <div style={{ marginBottom: 16 }}>
                                 <Text style={{ display: 'block', marginBottom: 8 }}>Проверить наличие ссылок с другими правами:</Text>
                                 <Space>
@@ -1503,7 +1501,7 @@ function ProjectPage() {
                                         )}
                                     </div>
                                     
-                                    {/* Предупреждения о состоянии ссылки */}
+                                    {}
                                     {existingLinkData.expiresAt && new Date(existingLinkData.expiresAt) < new Date() && (
                                         <div style={{ 
                                             marginTop: 8, 
@@ -1621,7 +1619,7 @@ function ProjectPage() {
                     )}
             </Modal>
 
-                {/* Модальное окно для создания ссылки-приглашения для доски */}
+                {}
                 <Modal
                     title={<div><LinkOutlined /> {existingBoardLinkData ? "Управление ссылкой-приглашением" : "Создать ссылку-приглашение"}</div>}
                     open={boardInviteLinkModalVisible}
@@ -1646,7 +1644,7 @@ function ProjectPage() {
                                 maxUsages: 1
                             }}
                         >
-                            {/* Секция для быстрого переключения между ролями */}
+                            {}
                             <div style={{ marginBottom: 16 }}>
                                 <Text style={{ display: 'block', marginBottom: 8 }}>Проверить наличие ссылок с другими правами:</Text>
                                 <Space>
@@ -1720,7 +1718,7 @@ function ProjectPage() {
                                         )}
                                     </div>
                                     
-                                    {/* Предупреждения о состоянии ссылки */}
+                                    {}
                                     {existingBoardLinkData.expiresAt && new Date(existingBoardLinkData.expiresAt) < new Date() && (
                                         <div style={{ 
                                             marginTop: 8, 
@@ -1838,7 +1836,7 @@ function ProjectPage() {
                     )}
                 </Modal>
 
-                {/* Добавляем стили для выбранных карточек в модальном окне импорта */}
+                {}
                 <style jsx>{`
                     .selected-card {
                         box-shadow: 0 0 0 2px #1890ff;
@@ -1848,7 +1846,7 @@ function ProjectPage() {
                     }
                 `}</style>
 
-            {/* Toast уведомления */}
+            {}
             <Toast
                 animation
                 delay={2000}

@@ -52,7 +52,7 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/ru';
 
-// Инициализация плагина relativeTime для форматирования дат
+
 dayjs.extend(relativeTime);
 dayjs.locale('ru');
 
@@ -584,7 +584,7 @@ function ProjectsPage() {
                         <Card style={{ marginBottom: 16 }}>
                             <Title level={3}>Мои проекты</Title>
                             
-                            {/* Форма поиска проектов */}
+                            {}
                             <Card 
                                 title={<Text strong>Поиск проектов</Text>} 
                                 bordered={false} 
@@ -730,7 +730,7 @@ function ProjectsPage() {
                     </TabPane>
                 </Tabs>
 
-                {/* Модальное окно для создания/редактирования проекта */}
+                {}
                 <Modal
                     title={editMode ? "Редактировать проект" : "Создать проект"}
                     open={showModal}
@@ -767,7 +767,7 @@ function ProjectsPage() {
                     </Form>
                 </Modal>
 
-                {/* Модальное окно для создания ссылки-приглашения */}
+                {}
                 <Modal
                     title={<div><LinkOutlined /> {existingLinkData ? "Управление ссылкой-приглашением" : "Создать ссылку-приглашение"}</div>}
                     open={inviteLinkModalVisible}
@@ -792,7 +792,7 @@ function ProjectsPage() {
                                 maxUsages: 1
                             }}
                         >
-                            {/* Секция для быстрого переключения между ролями */}
+                            {}
                             <div style={{ marginBottom: 16 }}>
                                 <Text style={{ display: 'block', marginBottom: 8 }}>Проверить наличие ссылок с другими правами:</Text>
                                 <Space>
@@ -866,7 +866,7 @@ function ProjectsPage() {
                                         )}
                                     </div>
                                     
-                                    {/* Предупреждения о состоянии ссылки */}
+                                    {}
                                     {existingLinkData.expiresAt && new Date(existingLinkData.expiresAt) < new Date() && (
                                         <div style={{ 
                                             marginTop: 8, 
@@ -984,7 +984,7 @@ function ProjectsPage() {
                     )}
                 </Modal>
 
-                {/* Стили для элементов списка */}
+                {}
                 <style jsx>{`
                     .project-list-item:hover {
                         background-color: #f8f8f8;

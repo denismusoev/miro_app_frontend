@@ -1,4 +1,4 @@
-// src/pages/BoardPageDefault.jsx
+
 import React, { useEffect, useCallback, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useBoardWebSocket from '../hooks/useBoardWebSocket';
@@ -17,11 +17,11 @@ export default function BoardPageDefault() {
     const navigate = useNavigate();
     const boardStateRef = useRef(null);
     
-    // Состояние для модального окна с ошибкой доступа
+
     const [showAccessDeniedModal, setShowAccessDeniedModal] = useState(false);
     const [accessError, setAccessError] = useState(null);
     
-    // Инициализируем хук обработки ошибок WebSocket с дополнительным обработчиком
+
     const { handleError, errors, isPermissionError } = useWebSocketErrors(false, (error) => {
         // Если ошибка связана с правами доступа, показываем модальное окно
         if (error.isPermissionError) {
@@ -80,6 +80,7 @@ export default function BoardPageDefault() {
         loadBoardData,
         loadConnectorData,
         onNodeDragStop,
+        onNodeDrag,
         onEdgesDelete,
         onNodesDelete,
         handleNodeUpdateFromServer,
@@ -123,6 +124,7 @@ export default function BoardPageDefault() {
                     onEdgeUpdate={onEdgeUpdate}
                     onSelectionChange={onSelectionChange}
                     onNodeDragStop={onNodeDragStop}
+                    onNodeDrag={onNodeDrag}
                     onDropNewNode={handleDropNewNode}
                     onEdgesDelete={onEdgesDelete}
                     onNodesDelete={onNodesDelete}

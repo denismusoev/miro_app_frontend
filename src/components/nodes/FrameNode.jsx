@@ -1,6 +1,6 @@
 // FrameNode.js
 import React, { useState, useRef, useEffect, useCallback, useMemo, memo } from 'react';
-import { NodeToolbar } from '@xyflow/react';
+import { NodeToolbar, useReactFlow, ReactFlow } from '@xyflow/react';
 import { BaseNode } from './BaseNode';
 import { Select, InputNumber, Popover, Button, Slider } from 'antd';
 import { CirclePicker } from 'react-color';
@@ -20,6 +20,70 @@ const formatOptions = [
     { value: FrameFormatType.RATIO_4X3, label: '4:3' },
     { value: FrameFormatType.RATIO_16X9, label: '16:9' },
 ];
+
+// Компонент SubFlow для отображения вложенных узлов
+const SubFlow = memo(({ parentId, showContent }) => {
+    // Хук для доступа к глобальному инстансу ReactFlow
+    const { getNodes, getEdges } = useReactFlow();
+    
+    // Получаем дочерние узлы для данного фрейма
+    const childNodes = useMemo(() => {
+        return getNodes().filter(node => node.parentNode === parentId);
+    }, [getNodes, parentId]);
+    
+    // Получаем ребра между дочерними узлами
+    const childEdges = useMemo(() => {
+        if (!childNodes.length) return [];
+        
+        const childIds = new Set(childNodes.map(node => node.id));
+        return getEdges().filter(edge => 
+            childIds.has(edge.source) && childIds.has(edge.target)
+        );
+    }, [getNodes, getEdges, childNodes]);
+    
+    // Не отображаем SubFlow, если узлы не должны быть видимыми
+    if (!showContent) return null;
+    
+    // Не отображаем SubFlow, если нет дочерних узлов
+    if (childNodes.length === 0) return null;
+    
+    return (
+        <div 
+            className="frame-subflow-container"
+            style={{
+                width: '100%',
+                height: '100%',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                pointerEvents: 'none', // Предотвращаем перехват событий от родительского потока
+                zIndex: 10
+            }}
+        >
+            {/* Здесь можно было бы отрендерить визуальные индикаторы дочерних узлов */}
+            <div className="child-nodes-indicator">
+                {childNodes.length > 0 && (
+                    <div 
+                        style={{ 
+                            position: 'absolute', 
+                            bottom: '4px', 
+                            left: '12px',
+                            fontSize: '10px',
+                            color: 'rgba(0,0,0,0.5)',
+                            background: 'rgba(255,255,255,0.5)',
+                            padding: '2px 4px',
+                            borderRadius: '3px',
+                            userSelect: 'none',
+                            zIndex: 1
+                        }}
+                    >
+                        {`Узлов: ${childNodes.length}`}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+});
 
 export const FrameNode = memo(({ id, data, selected, positionAbsoluteX, positionAbsoluteY }) => {
     // Используем useRef для хранения ссылок на функции из data
@@ -160,8 +224,72 @@ export const FrameNode = memo(({ id, data, selected, positionAbsoluteX, position
         // console.log(`Фрейм ${id} отрендерен, может содержать вложенные узлы`);
     }, [id]);
 
+    // Создаем мемоизированное содержимое тулбара
+    const frameToolbarContent = useMemo(() => (
+        <>
+            <Button 
+                type={showContent ? "primary" : "default"}
+                onClick={toggleShowContent}
+            >
+                {showContent ? 'Скрыть контент' : 'Показать контент'}
+            </Button>
+
+            <Popover
+                getPopupContainer={(trigger) => trigger.parentElement}
+                content={
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '200px', overflowY: 'auto' }}>
+                        {formatOptions.map((opt) => (
+                            <Button
+                                key={opt.value}
+                                type={opt.value === format ? 'primary' : 'default'}
+                                onClick={() => handleFormatChange(opt.value)}
+                            >
+                                {opt.label}
+                            </Button>
+                        ))}
+                    </div>
+                }
+                title="Выберите формат"
+                trigger="click"
+                open={formatPickerVisible}
+                onOpenChange={setFormatPickerVisible}
+            >
+                <Button icon={<FormOutlined />}>
+                    Формат
+                </Button>
+            </Popover>
+
+            <Popover
+                getPopupContainer={(trigger) => trigger.parentElement}
+                content={
+                    <CirclePicker
+                        color={fillColor}
+                        onChangeComplete={handleFillColorChange}
+                    />
+                }
+                title="Цвет фона"
+                trigger="click"
+                open={colorPickerVisible}
+                onOpenChange={setColorPickerVisible}
+            >
+                <Button icon={<BgColorsOutlined />} />
+            </Popover>
+        </>
+    ), [
+        showContent, toggleShowContent, 
+        formatOptions, format, handleFormatChange, formatPickerVisible, setFormatPickerVisible,
+        fillColor, handleFillColorChange, colorPickerVisible, setColorPickerVisible
+    ]);
+
     return (
-        <BaseNode id={id} data={{...data, type: 'group'}} selected={selected} positionAbsoluteX={positionAbsoluteX} positionAbsoluteY={positionAbsoluteY}>
+        <BaseNode 
+            id={id} 
+            data={{...data, type: 'group'}} 
+            selected={selected} 
+            positionAbsoluteX={positionAbsoluteX} 
+            positionAbsoluteY={positionAbsoluteY}
+            toolbarContent={frameToolbarContent}
+        >
             <div 
                 style={containerStyle}
                 className="frame-node-container"
@@ -175,66 +303,10 @@ export const FrameNode = memo(({ id, data, selected, positionAbsoluteX, position
                 <div style={formatIndicatorStyle}>
                     {formatOptions.find(f => f.value === format)?.label || 'Произвольный'}
                 </div>
+                
+                {/* Подключаем SubFlow для отображения вложенных узлов */}
+                <SubFlow parentId={id} showContent={showContent} />
             </div>
-
-            <NodeToolbar
-                onDoubleClick={(e) => e.stopPropagation()}
-                isVisible={selected}
-                position="top"
-                className="bg-white rounded shadow-sm"
-                style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '12px' }}
-            >
-                {/* Кнопка переключения видимости контента */}
-                <Button 
-                    type={showContent ? "primary" : "default"}
-                    onClick={toggleShowContent}
-                >
-                    {showContent ? 'Скрыть контент' : 'Показать контент'}
-                </Button>
-
-                {/* Кнопка выбора формата */}
-                <Popover
-                    getPopupContainer={(trigger) => trigger.parentElement}
-                    content={
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '200px', overflowY: 'auto' }}>
-                            {formatOptions.map((opt) => (
-                                <Button
-                                    key={opt.value}
-                                    type={opt.value === format ? 'primary' : 'default'}
-                                    onClick={() => handleFormatChange(opt.value)}
-                                >
-                                    {opt.label}
-                                </Button>
-                            ))}
-                        </div>
-                    }
-                    title="Выберите формат"
-                    trigger="click"
-                    open={formatPickerVisible}
-                    onOpenChange={setFormatPickerVisible}
-                >
-                    <Button icon={<FormOutlined />}>
-                        Формат
-                    </Button>
-                </Popover>
-
-                {/* Выбор цвета заливки */}
-                <Popover
-                    getPopupContainer={(trigger) => trigger.parentElement}
-                    content={
-                        <CirclePicker
-                            color={fillColor}
-                            onChangeComplete={handleFillColorChange}
-                        />
-                    }
-                    title="Цвет фона"
-                    trigger="click"
-                    open={colorPickerVisible}
-                    onOpenChange={setColorPickerVisible}
-                >
-                    <Button icon={<BgColorsOutlined />} />
-                </Popover>
-            </NodeToolbar>
         </BaseNode>
     );
 });

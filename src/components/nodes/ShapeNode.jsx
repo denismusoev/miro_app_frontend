@@ -20,7 +20,7 @@ import { TbLineDashed, TbLineDotted } from "react-icons/tb";
 import { FaRegCircle } from "react-icons/fa";
 import { throttle } from 'lodash';
 
-// Определяем набор возможных фигур для выбора
+// Массив доступных фигур
 const shapeOptions = [
     { value: ShapeType.CIRCLE, label: 'Круг' },
     { value: ShapeType.RECTANGLE, label: 'Прямоугольник' },
@@ -36,8 +36,880 @@ const shapeOptions = [
     { value: ShapeType.CLOUD, label: 'Облако' },
 ];
 
-const ROUND_RECTANGLE_RADIUS = 10; // Радиус скругления для round_rectangle
+// Типы (приведены для наглядности; подключите свои enum'ы)
+// const TextAlignType          = { LEFT: 'left', CENTER: 'center', RIGHT: 'right' };
+// const TextAlignVerticalType  = { TOP: 'top', MIDDLE: 'middle', BOTTOM: 'bottom' };
+// const ShapeType = {
+//     CIRCLE: 'circle',
+//     ROUND_RECTANGLE: 'roundRect',
+//     RECTANGLE: 'rect',
+//     RHOMBUS: 'rhombus',
+//     TRIANGLE: 'triangle',
+//     PARALLELOGRAM: 'parallelogram',
+//     TRAPEZOID: 'trapezoid',
+//     PENTAGON: 'pentagon',
+//     HEXAGON: 'hexagon',
+//     OCTAGON: 'octagon',
+//     STAR: 'star',
+//     CLOUD: 'cloud',
+// };
 
+// Константы
+const ROUND_RECTANGLE_RADIUS = 10;
+const TEXT_MARGIN = 30;
+
+const PADDING = 5;                // поставьте 0, если отступы не нужны
+
+const getBorderStyleExtra = (borderStyle, strokeW) => {
+    switch (borderStyle) {
+        case BorderStyleType.DASHED:
+            return {
+                strokeDasharray: `${4 * strokeW} ${2 * strokeW}`,
+                strokeLinecap: "butt",
+            };
+        case BorderStyleType.DOTTED:
+            return {
+                strokeDasharray: `${strokeW} ${1.5 * strokeW}`,
+                strokeLinecap: "round",
+            };
+        default:
+            return { strokeDasharray: "none", strokeLinecap: "butt" };
+    }
+};
+
+const ShapeRenderer = memo(
+    ({
+         shapeType,
+         width,
+         height,
+         shapeStyles,
+         textPosition,
+         textStyles,
+         nodeContent,
+         color,
+         id,
+     }) => {
+        
+
+        // Правильный n‑угольник
+        const createRegularPolygon = (
+            cx,
+            cy,
+            r,
+            sides,
+            fullW,
+            fullH,
+            props = {}
+        ) => {
+            const scaleX = fullW / Math.min(fullW, fullH);
+            const scaleY = fullH / Math.min(fullW, fullH);
+            const points = Array.from({ length: sides }, (_, i) => {
+            const a = (i * 2 * Math.PI) / sides - Math.PI / 2;
+                return [
+                    cx + r * Math.cos(a) * scaleX,
+                    cy + r * Math.sin(a) * scaleY,
+                ].join(',');
+            }).join(' ');
+            return <polygon points={points} {...props} />;
+        };
+
+        // Звезда
+        const createStar = (
+            cx,
+            cy,
+            r,
+            points = 5,
+            fullW,
+            fullH,
+            props = {}
+        ) => {
+            const innerR = r * 0.4;
+            const scaleX = fullW / Math.min(fullW, fullH);
+            const scaleY = fullH / Math.min(fullW, fullH);
+            let d = '';
+            for (let i = 0; i < points * 2; i++) {
+                const rr = i % 2 === 0 ? r : innerR;
+                const a = (i * Math.PI) / points - Math.PI / 2;
+                const x = cx + rr * Math.cos(a) * scaleX;
+                const y = cy + rr * Math.sin(a) * scaleY;
+                d += i === 0 ? `M${x},${y}` : `L${x},${y}`;
+            }
+            d += 'Z';
+            return <path d={d} {...props} />;
+        };
+
+        
+
+        const getShapeElement = (type, w, h, props = {}) => {
+            const strokeW =
+                props?.strokeWidth ?? shapeStyles?.strokeWidth ?? 0; // px
+            const offset = strokeW / 2 + PADDING;
+            const iw = w - offset * 2; // inner width
+            const ih = h - offset * 2; // inner height
+
+            const dashOffsetFix =
+                type === ShapeType.TRIANGLE || type === ShapeType.RHOMBUS
+                    ? strokeW / 2
+                    : 0;
+
+            const common = {
+                vectorEffect: "non-scaling-stroke",
+                strokeLinejoin: "round",
+                strokeLinecap: "round",
+                paintOrder: "stroke", // обводка под заливкой
+                strokeDashoffset: dashOffsetFix,
+                ...props,
+            };
+
+            switch (type) {
+                case ShapeType.CIRCLE:
+                    return (
+                        <ellipse
+                            cx={offset + iw / 2}
+                            cy={offset + ih / 2}
+                            rx={iw / 2}
+                            ry={ih / 2}
+                            {...common}
+                        />
+                    );
+
+                case ShapeType.ROUND_RECTANGLE:
+                    return (
+                        <rect
+                            x={offset}
+                            y={offset}
+                            width={iw}
+                            height={ih}
+                            rx={ROUND_RECTANGLE_RADIUS}
+                            ry={ROUND_RECTANGLE_RADIUS}
+                            {...common}
+                        />
+                    );
+
+                case ShapeType.RECTANGLE:
+                    return (
+                        <rect
+                            x={offset}
+                            y={offset}
+                            width={iw}
+                            height={ih}
+                            {...common}
+                        />
+                    );
+
+                case ShapeType.RHOMBUS:
+                    return (
+                        <polygon
+                            points={`
+                ${offset + iw / 2},${offset}
+                ${offset + iw},${offset + ih / 2}
+                ${offset + iw / 2},${offset + ih}
+                ${offset},${offset + ih / 2}
+              `}
+                            {...common}
+                        />
+                    );
+
+                case ShapeType.TRIANGLE:
+                    return (
+                        <polygon
+                            points={`
+                ${offset + iw / 2},${offset}
+                ${offset + iw},${offset + ih}
+                ${offset},${offset + ih}
+              `}
+                            {...common}
+                        />
+                    );
+
+                case ShapeType.PARALLELOGRAM: {
+                    const dx = iw * 0.25;
+                    return (
+                        <polygon
+                            points={`
+                ${offset + dx},${offset}
+                ${offset + iw},${offset}
+                ${offset + iw - dx},${offset + ih}
+                ${offset},${offset + ih}
+              `}
+                            {...common}
+                        />
+                    );
+                }
+
+                case ShapeType.TRAPEZOID: {
+                    const dx = iw * 0.15;
+                    return (
+                        <polygon
+                            points={`
+                ${offset + dx},${offset}
+                ${offset + iw - dx},${offset}
+                ${offset + iw},${offset + ih}
+                ${offset},${offset + ih}
+              `}
+                            {...common}
+                        />
+                    );
+                }
+
+                case ShapeType.PENTAGON:
+                    return createRegularPolygon(
+                        offset + iw / 2,
+                        offset + ih / 2,
+                        Math.min(iw, ih) / 2,
+                        5,
+                        iw,
+                        ih,
+                        common
+                    );
+
+                case ShapeType.HEXAGON:
+                    return createRegularPolygon(
+                        offset + iw / 2,
+                        offset + ih / 2,
+                        Math.min(iw, ih) / 2,
+                        6,
+                        iw,
+                        ih,
+                        common
+                    );
+
+                case ShapeType.OCTAGON:
+                    return createRegularPolygon(
+                        offset + iw / 2,
+                        offset + ih / 2,
+                        Math.min(iw, ih) / 2,
+                        8,
+                        iw,
+                        ih,
+                        common
+                    );
+
+                case ShapeType.STAR:
+                    return createStar(
+                        offset + iw / 2,
+                        offset + ih / 2,
+                        Math.min(iw, ih) / 2,
+                        5,
+                        iw,
+                        ih,
+                        common
+                    );
+
+                case ShapeType.CLOUD:
+                    return (
+                        <path
+                            d={`
+                M${offset + iw * 0.2},${offset + ih * 0.5}
+                C${offset + iw * 0.1},${offset + ih * 0.3}
+                 ${offset + iw * 0.3},${offset + ih * 0.1}
+                 ${offset + iw * 0.5},${offset + ih * 0.2}
+                C${offset + iw * 0.6},${offset + ih * 0.05}
+                 ${offset + iw * 0.8},${offset + ih * 0.1}
+                 ${offset + iw * 0.9},${offset + ih * 0.3}
+                C${offset + iw * 1.05},${offset + ih * 0.4}
+                 ${offset + iw * 1.0},${offset + ih * 0.6}
+                 ${offset + iw * 0.9},${offset + ih * 0.7}
+                C${offset + iw * 0.9},${offset + ih * 0.8}
+                 ${offset + iw * 0.7},${offset + ih * 0.9}
+                 ${offset + iw * 0.5},${offset + ih * 0.8}
+                C${offset + iw * 0.3},${offset + ih * 0.9}
+                 ${offset + iw * 0.1},${offset + ih * 0.7}
+                 ${offset + iw * 0.2},${offset + ih * 0.5}
+                Z
+              `}
+                            {...common}
+                        />
+                    );
+
+                default:
+                    return (
+                        <rect
+                            x={offset}
+                            y={offset}
+                            width={iw}
+                            height={ih}
+                            {...common}
+                        />
+                    );
+            }
+        };
+
+        
+
+        const strokeW = shapeStyles?.strokeWidth ?? 0;
+        const pad = strokeW / 2 + PADDING;
+
+        return (
+            <svg
+                width={width}
+                height={height}
+                viewBox={`0 0 ${width} ${height}`}
+                preserveAspectRatio="none"
+                style={{ overflow: 'hidden' }}
+            >
+                <defs>
+                    <clipPath id={`clipShape-${id}`}>
+                        {getShapeElement(shapeType, width, height)}
+                    </clipPath>
+                </defs>
+
+                {}
+                {getShapeElement(shapeType, width, height, shapeStyles)}
+
+                {}
+                <g clipPath={`url(#clipShape-${id})`}>
+                    <text
+                        x={textPosition.x}
+                        y={textPosition.y}
+                        fill={color}
+                        style={textStyles}
+                    >
+                        {nodeContent}
+                    </text>
+                </g>
+            </svg>
+        );
+    }
+);
+
+// Компонент панели инструментов
+const ShapeToolbar = memo(({
+    selected,
+    currentShape,
+    fontFamily,
+    fontSize,
+    color,
+    fillColor,
+    fillOpacity,
+    textAlign,
+    textAlignVertical,
+    borderColor,
+    borderOpacity,
+    borderStyle,
+    borderWidth,
+    onShapeTypeChange,
+    onFontFamilyChange,
+    onFontSizeChange,
+    onTextColorChange,
+    onFillColorChange,
+    onFillOpacityChange,
+    onTextAlignChange,
+    onTextAlignVerticalChange,
+    onBorderColorChange,
+    onBorderOpacityChange,
+    onBorderStyleChange,
+    onBorderWidthChange
+}) => {
+    // Состояния для контроля отображения popover
+    const [shapePickerVisible, setShapePickerVisible] = useState(false);
+    const [textColorVisible, setTextColorVisible] = useState(false);
+    const [fillSettingsVisible, setFillSettingsVisible] = useState(false);
+    const [alignmentVisible, setAlignmentVisible] = useState(false);
+    const [borderSettingsVisible, setBorderSettingsVisible] = useState(false);
+
+    return (
+        <NodeToolbar
+            onDoubleClick={(e) => e.stopPropagation()}
+            isVisible={selected}
+            position="top"
+            className="bg-white rounded shadow-sm"
+            style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '12px' }}
+        >
+            {}
+            <Popover
+                getPopupContainer={(trigger) => trigger.parentElement}
+                content={
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '300px', overflowY: 'auto' }}>
+                        {shapeOptions.map((opt) => (
+                            <Button
+                                key={opt.value}
+                                type={opt.value === currentShape ? 'primary' : 'default'}
+                                onClick={() => {
+                                    onShapeTypeChange(opt.value);
+                                    setShapePickerVisible(false);
+                                }}
+                            >
+                                {opt.label}
+                            </Button>
+                        ))}
+                    </div>
+                }
+                title="Выберите фигуру"
+                trigger="click"
+                visible={shapePickerVisible}
+                onVisibleChange={setShapePickerVisible}
+            >
+                <Button onClick={() => setShapePickerVisible(true)}>
+                    {shapeOptions.find((s) => s.value === currentShape)?.label || 'Фигура'}
+                </Button>
+            </Popover>
+
+            {}
+            <Select
+                value={fontFamily}
+                onChange={onFontFamilyChange}
+                variant={"filled"}
+                style={{ width: 120, minWidth: 80 }}
+                options={Object.values(FontFamilyType).map((font) => ({ value: font, label: font }))}
+            />
+
+            {}
+            <InputNumber
+                value={fontSize}
+                onChange={onFontSizeChange}
+                min={1}
+                variant={"filled"}
+                style={{ width: 60, textAlign: 'center' }}
+            />
+
+            {}
+            <Popover
+                getPopupContainer={(trigger) => trigger.parentElement}
+                content={
+                    <CirclePicker
+                        color={color}
+                        onChangeComplete={(newColor) => {
+                            onTextColorChange(newColor);
+                            setTextColorVisible(false);
+                        }}
+                    />
+                }
+                title="Text Color"
+                trigger="click"
+                visible={textColorVisible}
+                onVisibleChange={setTextColorVisible}
+            >
+                <button
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer'
+                    }}
+                    title="Text Color"
+                >
+                    <FontColorsOutlined style={{ fontSize: '20px' }} />
+                </button>
+            </Popover>
+
+            {}
+            <Popover
+                getPopupContainer={(trigger) => trigger.parentElement}
+                content={
+                    <div style={{ padding: '6px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div>
+                            <div style={{ fontSize: '12px', marginBottom: '4px' }}>Fill Opacity</div>
+                            <Slider
+                                min={0}
+                                max={1}
+                                step={0.05}
+                                value={typeof fillOpacity === 'number' ? fillOpacity : parseFloat(fillOpacity) || 0}
+                                onChange={onFillOpacityChange}
+                            />
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '12px', marginBottom: '4px' }}>Fill Color</div>
+                            <CirclePicker
+                                color={fillColor}
+                                onChangeComplete={(newColor) => onFillColorChange(newColor)}
+                            />
+                        </div>
+                    </div>
+                }
+                title="Fill Settings"
+                trigger="click"
+                visible={fillSettingsVisible}
+                onVisibleChange={setFillSettingsVisible}
+            >
+                <button
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer'
+                    }}
+                    title="Fill Settings"
+                >
+                    <BgColorsOutlined style={{ fontSize: '20px' }} />
+                </button>
+            </Popover>
+
+            {}
+            <Popover
+                getPopupContainer={(trigger) => trigger.parentElement}
+                content={
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+                            <Button
+                                type="text"
+                                onClick={() => onTextAlignChange(TextAlignType.LEFT)}
+                                style={{ opacity: textAlign === TextAlignType.LEFT ? 1 : 0.5 }}
+                            >
+                                <span style={{ fontSize: '18px' }}>←</span>
+                            </Button>
+                            <Button
+                                type="text"
+                                onClick={() => onTextAlignChange(TextAlignType.CENTER)}
+                                style={{ opacity: textAlign === TextAlignType.CENTER ? 1 : 0.5 }}
+                            >
+                                <span style={{ fontSize: '18px' }}>↔</span>
+                            </Button>
+                            <Button
+                                type="text"
+                                onClick={() => onTextAlignChange(TextAlignType.RIGHT)}
+                                style={{ opacity: textAlign === TextAlignType.RIGHT ? 1 : 0.5 }}
+                            >
+                                <span style={{ fontSize: '18px' }}>→</span>
+                            </Button>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+                            <Button
+                                type="text"
+                                onClick={() => onTextAlignVerticalChange(TextAlignVerticalType.TOP)}
+                                style={{ opacity: textAlignVertical === TextAlignVerticalType.TOP ? 1 : 0.5 }}
+                            >
+                                <span style={{ fontSize: '18px' }}>↑</span>
+                            </Button>
+                            <Button
+                                type="text"
+                                onClick={() => onTextAlignVerticalChange(TextAlignVerticalType.MIDDLE)}
+                                style={{ opacity: textAlignVertical === TextAlignVerticalType.MIDDLE ? 1 : 0.5 }}
+                            >
+                                <span style={{ fontSize: '18px' }}>↕</span>
+                            </Button>
+                            <Button
+                                type="text"
+                                onClick={() => onTextAlignVerticalChange(TextAlignVerticalType.BOTTOM)}
+                                style={{ opacity: textAlignVertical === TextAlignVerticalType.BOTTOM ? 1 : 0.5 }}
+                            >
+                                <span style={{ fontSize: '18px' }}>↓</span>
+                            </Button>
+                        </div>
+                    </div>
+                }
+                title="Alignment"
+                trigger="click"
+                placement="bottom"
+                visible={alignmentVisible}
+                onVisibleChange={setAlignmentVisible}
+            >
+                <button
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer'
+                    }}
+                    title="Alignment"
+                >
+                    <AlignCenterOutlined style={{ fontSize: '20px' }} />
+                </button>
+            </Popover>
+
+             {}
+            <Popover
+                getPopupContainer={(trigger) => trigger.parentElement}
+                content={
+                    <div style={{ padding: '6px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div>
+                            <div style={{ fontSize: '12px', marginBottom: '4px' }}>Border Opacity</div>
+                            <Slider
+                                min={0}
+                                max={1}
+                                step={0.05}
+                                value={typeof borderOpacity === 'number' ? borderOpacity : parseFloat(borderOpacity) || 0}
+                                onChange={onBorderOpacityChange}
+                            />
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '12px', marginBottom: '4px' }}>Border Style</div>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <Button
+                                    type={borderStyle === BorderStyleType.NONE || borderStyle === BorderStyleType.SOLID ? "primary" : "default"}
+                                    onClick={() => onBorderStyleChange(BorderStyleType.SOLID)}
+                                >
+                                    <TfiLayoutLineSolid size={30} />
+                                </Button>
+                                <Button
+                                    type={borderStyle === BorderStyleType.DOTTED ? "primary" : "default"}
+                                    onClick={() => onBorderStyleChange(BorderStyleType.DOTTED)}
+                                >
+                                    <TbLineDotted size={30} />
+                                </Button>
+                                <Button
+                                    type={borderStyle === BorderStyleType.DASHED ? "primary" : "default"}
+                                    onClick={() => onBorderStyleChange(BorderStyleType.DASHED)}
+                                >
+                                    <TbLineDashed size={30} />
+                                </Button>
+                            </div>
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '12px', marginBottom: '4px' }}>Border Width</div>
+                            <Slider
+                                min={0}
+                                max={10}
+                                step={0.5}
+                                value={parseFloat(borderWidth)}
+                                onChange={onBorderWidthChange}
+                            />
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '12px', marginBottom: '4px' }}>Border Color</div>
+                            <CirclePicker
+                                color={borderColor}
+                                onChangeComplete={(newColor) => {
+                                    onBorderColorChange(newColor);
+                                    setBorderSettingsVisible(false);
+                                }}
+                            />
+                        </div>
+                    </div>
+                }
+                title="Border Settings"
+                trigger="click"
+                visible={borderSettingsVisible}
+                onVisibleChange={setBorderSettingsVisible}
+            >
+                <button
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer'
+                    }}
+                    title="Border Settings"
+                >
+                    <FaRegCircle style={{ fontSize: '20px' }} />
+                </button>
+            </Popover>
+        </NodeToolbar>
+    );
+});
+
+// одинаковая формула отступа, что и в ShapeRenderer
+const calcOffset = (strokeW, padConst) =>
+    strokeW / 2 + Math.max(padConst, 0.25 * strokeW);
+
+export const getTextPosition = (
+    shapeType,
+    width,
+    height,
+    textAlign         = TextAlignType.CENTER,
+    textAlignVertical = TextAlignVerticalType.MIDDLE,
+    strokeWidth       = 0,
+    padConst          = PADDING           // тот же, что в ShapeRenderer
+) => {
+    const offset = calcOffset(strokeWidth, padConst);   // ← исправлено
+
+    
+    if (
+        shapeType === ShapeType.RECTANGLE ||
+        shapeType === ShapeType.ROUND_RECTANGLE
+    ) {
+        // горизонталь
+        let x;
+        switch (textAlign) {
+            case TextAlignType.LEFT:
+                x = offset + TEXT_MARGIN;
+                break;
+            case TextAlignType.RIGHT:
+                x = width - offset - TEXT_MARGIN;
+                break;
+            default: // CENTER
+                x = offset + (width - 2 * offset) / 2;
+        }
+
+        // вертикаль
+        let y;
+        switch (textAlignVertical) {
+            case TextAlignVerticalType.TOP:
+                y = offset + TEXT_MARGIN;
+                break;
+            case TextAlignVerticalType.BOTTOM:
+                y = height - offset - TEXT_MARGIN;
+                break;
+            default: // MIDDLE
+                y = offset + (height - 2 * offset) / 2;
+        }
+
+        return { x, y };
+    }
+
+    
+    return {
+        x: offset + (width  - 2 * offset) / 2,
+        y: offset + (height - 2 * offset) / 2,
+    };
+};
+
+// Оптимизированный компонент текстовой позиции
+// export function getTextPosition(
+//     shapeType,
+//     width,
+//     height,
+//     textAlign        = TextAlignType.CENTER,
+//     textAlignVertical = TextAlignVerticalType.MIDDLE,
+//     strokeWidth      = 0,
+//     PADDING          = 4          // тот же, что в ShapeRenderer
+// ) {
+//     
+//     const pad   = strokeWidth / 2 + PADDING; // отступ от внешнего края SVG
+//     const iw    = width  - 2 * pad;          // inner width
+//     const ih    = height - 2 * pad;          // inner height
+//     const cx    = pad + iw / 2;
+//     const cy    = pad + ih / 2;
+//
+//     
+//     const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+//
+//     
+//     let hBounds, vBounds;
+//
+//     switch (shapeType) {
+//         
+//         case ShapeType.RECTANGLE:
+//         case ShapeType.ROUND_RECTANGLE: {
+//             hBounds = () => ({ min: pad, max: pad + iw });
+//             vBounds = () => ({ min: pad, max: pad + ih });
+//             break;
+//         }
+//
+//         
+//         case ShapeType.CIRCLE: {
+//             const rx = iw / 2;
+//             const ry = ih / 2;
+//
+//             hBounds = (y) => {
+//                 const dy = y - cy;
+//                 // (x - cx)^2 = rx^2 * (1 - (dy/ry)^2)
+//                 const span = Math.sqrt(Math.max(0, rx * rx * (1 - (dy * dy) / (ry * ry))));
+//                 return { min: cx - span, max: cx + span };
+//             };
+//
+//             vBounds = (x) => {
+//                 const dx = x - cx;
+//                 const span = Math.sqrt(Math.max(0, ry * ry * (1 - (dx * dx) / (rx * rx))));
+//                 return { min: cy - span, max: cy + span };
+//             };
+//             break;
+//         }
+//
+//         
+//         case ShapeType.RHOMBUS: {
+//             hBounds = (y) => {
+//                 const half = (ih / 2 - Math.abs(y - cy)) * (iw / ih);
+//                 return { min: cx - half, max: cx + half };
+//             };
+//             vBounds = (x) => {
+//                 const half = (iw / 2 - Math.abs(x - cx)) * (ih / iw);
+//                 return { min: cy - half, max: cy + half };
+//             };
+//             break;
+//         }
+//
+//         
+//         case ShapeType.TRIANGLE: {
+//             hBounds = (y) => {
+//                 const t    = (y - pad) / ih;        // 0 у вершины, 1 у основания
+//                 const half = (iw / 2) * clamp(t, 0, 1);
+//                 return { min: cx - half, max: cx + half };
+//             };
+//             vBounds = () => ({ min: pad, max: pad + ih });
+//             break;
+//         }
+//
+//         
+//         case ShapeType.PARALLELOGRAM: {
+//             const dx = iw * 0.25;                 // горизонтальный сдвиг верхней грани
+//             hBounds = (y) => {
+//                 const t = (y - pad) / ih;
+//                 return {
+//                     min: pad + dx * (1 - t),
+//                     max: pad + iw - dx * (1 - t),
+//                 };
+//             };
+//             vBounds = () => ({ min: pad, max: pad + ih });
+//             break;
+//         }
+//
+//         
+//         case ShapeType.TRAPEZOID: {
+//             const dxTop = iw * 0.15;
+//             hBounds = (y) => {
+//                 const t = (y - pad) / ih;
+//                 return {
+//                     min: pad + dxTop * (1 - t),
+//                     max: pad + iw - dxTop * (1 - t),
+//                 };
+//             };
+//             vBounds = () => ({ min: pad, max: pad + ih });
+//             break;
+//         }
+//
+//         
+//         default: {
+//             // Используем bounding‑box: их углы не критично острые, текст не вылезет
+//             hBounds = () => ({ min: pad, max: pad + iw });
+//             vBounds = () => ({ min: pad, max: pad + ih });
+//         }
+//     }
+//
+//     
+//     let y;
+//     switch (textAlignVertical) {
+//         case TextAlignVerticalType.TOP:
+//             y = vBounds(cx).min + TEXT_MARGIN;
+//             break;
+//         case TextAlignVerticalType.BOTTOM:
+//             y = vBounds(cx).max - TEXT_MARGIN;
+//             break;
+//         default: // MIDDLE
+//             const vb = vBounds(cx);
+//             y = (vb.min + vb.max) / 2;
+//     }
+//
+//     
+//     let x;
+//     switch (textAlign) {
+//         case TextAlignType.LEFT:
+//             x = hBounds(y).min + TEXT_MARGIN;
+//             break;
+//         case TextAlignType.RIGHT:
+//             x = hBounds(y).max - TEXT_MARGIN;
+//             break;
+//         default: // CENTER
+//             const hb = hBounds(y);
+//             x = (hb.min + hb.max) / 2;
+//     }
+//
+//     
+//     if (shapeType === ShapeType.CIRCLE) {
+//         const rx = iw / 2 - TEXT_MARGIN;
+//         const ry = ih / 2 - TEXT_MARGIN;
+//         const dx = x - cx;
+//         const dy = y - cy;
+//         const k  = (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry);
+//         if (k > 1) {
+//             const s = 1 / Math.sqrt(k);
+//             x = cx + dx * s;
+//             y = cy + dy * s;
+//         }
+//     }
+//
+//     return { x, y };
+// }
+
+// Основной компонент ShapeNode
 export const ShapeNode = memo((props) => {
     const { id, data, selected, positionAbsoluteX, positionAbsoluteY } = props;
     
@@ -48,14 +920,7 @@ export const ShapeNode = memo((props) => {
     useMemo(() => {
         functionsRef.current = data.functions;
     }, [data.functions]);
-
-    // Управление видимостью Popover'ов
-    const [shapePickerVisible, setShapePickerVisible] = useState(false);
-    const [textColorVisible, setTextColorVisible] = useState(false);
-    const [fillSettingsVisible, setFillSettingsVisible] = useState(false);
-    const [alignmentVisible, setAlignmentVisible] = useState(false);
-    const [borderSettingsVisible, setBorderSettingsVisible] = useState(false);
-
+    
     // Обработчики обновления данных и стилей узла
     const handleStyleChange = useCallback((stylePart) => {
         if (functionsRef.current?.onStyleChange) {
@@ -73,127 +938,79 @@ export const ShapeNode = memo((props) => {
 
     // Извлекаем стили с дефолтными значениями
     const {
-        fontFamily,
-        fontSize,
-        color,
-        fillColor,
-        fillOpacity,
-        textAlign,
-        textAlignVertical,
-        borderColor,
-        borderOpacity,
-        borderStyle,
-        borderWidth,
+        fontFamily = FontFamilyType.ARIAL,
+        fontSize = 14,
+        color = '#000000',
+        fillColor = ColorType.WHITE,
+        fillOpacity = 1.0,
+        textAlign = TextAlignType.CENTER,
+        textAlignVertical = TextAlignVerticalType.TOP,
+        borderColor = '#000000',
+        borderOpacity = 1.0,
+        borderStyle = BorderStyleType.NONE,
+        borderWidth = 1
     } = useMemo(() => {
-        // Обработка fillOpacity с учетом значения 0
-        let fillOpacityValue;
-        if (data.style?.fillOpacity === 0 || data.style?.fillOpacity === '0') {
-            fillOpacityValue = 0;
-        } else {
-            fillOpacityValue = data.style?.fillOpacity;
-            // Преобразуем в число, если это строка
-            if (typeof fillOpacityValue === 'string') {
-                fillOpacityValue = parseFloat(fillOpacityValue);
-            }
-            // Если значение не определено или NaN, используем 1.0 по умолчанию
-            if (fillOpacityValue === undefined || fillOpacityValue === null || isNaN(fillOpacityValue)) {
-                fillOpacityValue = 1.0;
-            }
-        }
+        // Нормализация числовых значений
+        const normalizeSafe = (value, defaultValue = 1.0) => {
+            if (value === 0 || value === '0') return 0;
+            if (typeof value === 'string') value = parseFloat(value);
+            return isNaN(value) || value === undefined || value === null ? defaultValue : value;
+        };
         
-        // Обработка borderOpacity с учетом значения 0
-        let borderOpacityValue;
-        if (data.style?.borderOpacity === 0 || data.style?.borderOpacity === '0') {
-            borderOpacityValue = 0;
-        } else {
-            borderOpacityValue = data.style?.borderOpacity;
-            // Преобразуем в число, если это строка
-            if (typeof borderOpacityValue === 'string') {
-                borderOpacityValue = parseFloat(borderOpacityValue);
-            }
-            // Если значение не определено или NaN, используем 1.0 по умолчанию
-            if (borderOpacityValue === undefined || borderOpacityValue === null || isNaN(borderOpacityValue)) {
-                borderOpacityValue = 1.0;
-            }
-        }
-
         return {
-            fontFamily: data.style?.fontFamily || FontFamilyType.ARIAL,
-            fontSize: data.style?.fontSize || 14,
-            color: data.style?.color || '#000000',
-            fillColor: data.style?.fillColor || ColorType.WHITE,
-            fillOpacity: fillOpacityValue,
-            textAlign: data.style?.textAlign || TextAlignType.CENTER,
-            textAlignVertical: data.style?.textAlignVertical || TextAlignVerticalType.TOP,
-            borderColor: data.style?.borderColor || '#000000',
-            borderOpacity: borderOpacityValue,
-            borderStyle: data.style?.borderStyle || BorderStyleType.NONE,
-            borderWidth: data.style?.borderWidth || 1,
+            fontFamily: data.style?.fontFamily,
+            fontSize: data.style?.fontSize,
+            color: data.style?.color,
+            fillColor: data.style?.fillColor,
+            fillOpacity: normalizeSafe(data.style?.fillOpacity),
+            textAlign: data.style?.textAlign,
+            textAlignVertical: data.style?.textAlignVertical,
+            borderColor: data.style?.borderColor,
+            borderOpacity: normalizeSafe(data.style?.borderOpacity),
+            borderStyle: data.style?.borderStyle,
+            borderWidth: normalizeSafe(data.style?.borderWidth, 1)
         };
     }, [data.style]);
 
     // Получаем содержимое узла - текст для отображения
-    const nodeContent = useMemo(() => {
-        return data.label || '';
-    }, [data.label]);
+    const nodeContent = useMemo(() => data.label || '', [data.label]);
 
     // Текущий тип фигуры из data, по умолчанию прямоугольник
-    const currentShape = useMemo(() => {
-        // Учитываем, что для совместимости ShapeType.RECTANGLE можно применять 
-        // и к ShapeType.ROUND_RECTANGLE, если явно указан этот тип
-        const shape = data.shape || ShapeType.RECTANGLE;
-        return shape;
-    }, [data.shape]);
+    const currentShape = useMemo(() => data.shape || ShapeType.RECTANGLE, [data.shape]);
 
-    // Функция проверки, является ли фигура прямоугольным типом
-    const isRectangularShape = useCallback((shape) => {
-        return shape === ShapeType.RECTANGLE || shape === ShapeType.ROUND_RECTANGLE;
-    }, []);
-
-    // Расчёт цветов и стилей границы
-    const backgroundRgba = useMemo(() => {
-        // Обработка fillOpacity
-        const opacity = typeof fillOpacity === 'number' ? 
+    // Расчёт цветов с учетом прозрачности
+    const backgroundRgba = useMemo(() => 
+        hexToRgba(fillColor, typeof fillOpacity === 'number' ? 
             Math.min(1, Math.max(0, fillOpacity)) : 
-            parseFloat(fillOpacity) || 0;
-        
-        return hexToRgba(fillColor, opacity);
-    }, [fillColor, fillOpacity]);
-    
-    const borderColorRgba = useMemo(() => {
-        // Обработка borderOpacity
-        const opacity = typeof borderOpacity === 'number' ? 
-            Math.min(1, Math.max(0, borderOpacity)) : 
-            parseFloat(borderOpacity) || 0;
-        
-        return hexToRgba(borderColor, opacity);
-    }, [borderColor, borderOpacity]);
-    
-    const effectiveBorderWidth = useMemo(() => 
-        borderWidth,
-        [borderWidth]
+            parseFloat(fillOpacity) || 0),
+        [fillColor, fillOpacity]
     );
     
-    // Вычисляем строковое представление стиля обводки для CSS свойств
-    const borderStyleString = useMemo(() => {
-        let style = BorderStyleType.SOLID; // по умолчанию solid
-        
-        if (borderStyle === BorderStyleType.DOTTED) {
-            style = BorderStyleType.DOTTED;
-        } else if (borderStyle === BorderStyleType.DASHED) {
-            style = BorderStyleType.DASHED;
-        } else if (borderStyle === BorderStyleType.NORMAL || borderStyle === BorderStyleType.NONE || borderStyle === BorderStyleType.SOLID) {
-            style = BorderStyleType.SOLID;
-        }
-        
-        return `${effectiveBorderWidth}px ${style} ${borderColorRgba}`;
-    }, [effectiveBorderWidth, borderStyle, borderColorRgba]);
+    const borderColorRgba = useMemo(() => 
+        hexToRgba(borderColor, typeof borderOpacity === 'number' ? 
+            Math.min(1, Math.max(0, borderOpacity)) : 
+            parseFloat(borderOpacity) || 0),
+        [borderColor, borderOpacity]
+    );
     
+    // Определение стиля границы
+    const borderStyleString = useMemo(() => {
+        const style = borderStyle === BorderStyleType.DOTTED 
+            ? BorderStyleType.DOTTED 
+            : borderStyle === BorderStyleType.DASHED 
+                ? BorderStyleType.DASHED 
+                : BorderStyleType.SOLID;
+        
+        return `${borderWidth}px ${style} ${borderColorRgba}`;
+    }, [borderWidth, borderStyle, borderColorRgba]);
+    
+    // Получаем выравнивание для flex контейнера
     const alignItems = useMemo(() => 
         getFlexAlignByVerticalTextAlign(textAlignVertical),
         [textAlignVertical]
     );
 
+    // Стиль внутреннего контейнера
     const innerStyle = useMemo(() => ({
         position: 'absolute',
         inset: 0,
@@ -202,358 +1019,72 @@ export const ShapeNode = memo((props) => {
         fontFamily,
         fontSize: `${fontSize}px`,
         color,
+        // boxSizing: 'border-box'
     }), [fontFamily, fontSize, color]);
     
-    // Геометрические параметры с мемоизацией
+    // Геометрические параметры узла
     const { width, height } = useMemo(() => ({
         width: data.geometry?.width || 120,
         height: data.geometry?.height || 80,
     }), [data.geometry]);
 
-    // Мемоизированные вычисления размеров и позиций SVG элементов
-    const svgDimensions = useMemo(() => {
-        const offset = effectiveBorderWidth / 2;
-        return {
-            offset,
-            vbX: -offset,
-            vbY: -offset,
-            vbWidth: width + effectiveBorderWidth,
-            vbHeight: height + effectiveBorderWidth,
-            viewBox: `${-offset} ${-offset} ${width + effectiveBorderWidth} ${height + effectiveBorderWidth}`
-        };
-    }, [width, height, effectiveBorderWidth]);
+    // Стили для фигуры
+    const borderExtra = useMemo(
+        () => getBorderStyleExtra(borderStyle, borderWidth),
+        [borderStyle, borderWidth]
+    );
 
-    // Функции для вычисления позиций и отрисовки фигуры перенесены сюда
-    // Определяем отступ (в пикселях)
-    const MARGIN = 40;
-
-    const midpoint = (p1, p2) => ({
-        x: (p1.x + p2.x) / 2,
-        y: (p1.y + p2.y) / 2,
-    });
-
-    // Для эллипса уменьшаем радиусы на MARGIN, чтобы текст не прилегал к краю
-    const getEllipseTextPosition = (width, height, alignmentH, alignmentV) => {
-        const cx = width / 2;
-        const cy = height / 2;
-        const rx = width / 2;
-        const ry = height / 2;
-        const rxEff = Math.max(0, rx - MARGIN);
-        const ryEff = Math.max(0, ry - MARGIN);
-        if (alignmentH === 'center' && alignmentV === 'middle') {
-            return { x: cx, y: cy };
-        }
-        const combinationKey = `${alignmentH}-${alignmentV}`;
-        let angleDeg = 0;
-        switch (combinationKey) {
-            case 'left-top':
-                angleDeg = 135;
-                break;
-            case 'center-top':
-                angleDeg = 90;
-                break;
-            case 'right-top':
-                angleDeg = 45;
-                break;
-            case 'left-middle':
-                angleDeg = 180;
-                break;
-            case 'right-middle':
-                angleDeg = 0;
-                break;
-            case 'left-bottom':
-                angleDeg = 225;
-                break;
-            case 'center-bottom':
-                angleDeg = 270;
-                break;
-            case 'right-bottom':
-                angleDeg = 315;
-                break;
-            default:
-                angleDeg = 0;
-                break;
-        }
-        const angleRad = (Math.PI / 180) * angleDeg;
-        const x = cx + rxEff * Math.cos(angleRad);
-        const y = cy - ryEff * Math.sin(angleRad);
-        return { x, y };
-    };
-
-    // Для прямоугольника задаём позицию в зависимости от выравнивания с отступами
-    const getRectangleTextPosition = (width, height, alignmentH, alignmentV) => {
-        let x, y;
-        if (alignmentH === 'left') {
-            x = MARGIN;
-        } else if (alignmentH === 'right') {
-            x = width - MARGIN;
-        } else {
-            x = width / 2;
-        }
-        if (alignmentV === 'top') {
-            y = MARGIN;
-        } else if (alignmentV === 'bottom') {
-            y = height - MARGIN;
-        } else {
-            y = height / 2;
-        }
-        return { x, y };
-    };
-
-    // Для ромба пересмотрен алгоритм
-    const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
-
-    const getRhombusTextPosition = (width, height, alignmentH, alignmentV) => {
-        // Определяем крайние точки фигуры с учетом отступов
-        const top = { x: width / 2, y: MARGIN };
-        const right = { x: width - MARGIN, y: height / 2 };
-        const bottom = { x: width / 2, y: height - MARGIN };
-        const left = { x: MARGIN, y: height / 2 };
-        const center = { x: width / 2, y: height / 2 };
-
-        const combinationKey = `${alignmentH}-${alignmentV}`;
-
-        let pos;
-        switch (combinationKey) {
-            case 'left-top':
-                pos = midpoint(top, left);
-                break;
-            case 'center-top':
-                pos = midpoint(top, center);
-                break;
-            case 'right-top':
-                pos = midpoint(top, right);
-                break;
-            case 'left-middle':
-                // Вместо midpoint(left, center) (который дает около 25% от ширины), задаем более сильное смещение
-                pos = { x: width * 0.15, y: height / 2 };
-                break;
-            case 'center-middle':
-                pos = center;
-                break;
-            case 'right-middle':
-                // Аналогично, заменяем midpoint(right, center) на позицию около 85% от ширины
-                pos = { x: width * 0.85, y: height / 2 };
-                break;
-            case 'left-bottom':
-                pos = midpoint(bottom, left);
-                break;
-            case 'center-bottom':
-                pos = midpoint(bottom, center);
-                break;
-            case 'right-bottom':
-                pos = midpoint(bottom, right);
-                break;
-            default:
-                pos = center;
-                break;
-        }
-
-        // Клипаем результат, чтобы не выйти за отступы
-        return {
-            x: clamp(pos.x, MARGIN, width - MARGIN),
-            y: clamp(pos.y, MARGIN, height - MARGIN)
-        };
-    };
-
-    const getTextPositionForShape = (
-        shapeType,
-        width,
-        height,
-        textAlign, // 'left' | 'center' | 'right'
-        textAlignVertical // 'top' | 'center' | 'bottom'
-    ) => {
-        switch (shapeType) {
-            case ShapeType.RHOMBUS:
-                return getRhombusTextPosition(width, height, textAlign, textAlignVertical);
-            case ShapeType.CIRCLE:
-                return getEllipseTextPosition(width, height, textAlign, textAlignVertical);
-            case ShapeType.TRIANGLE:
-            case ShapeType.PARALLELOGRAM:
-            case ShapeType.TRAPEZOID:
-            case ShapeType.PENTAGON:
-            case ShapeType.HEXAGON:
-            case ShapeType.OCTAGON:
-            case ShapeType.STAR:
-            case ShapeType.CLOUD:
-                // Для сложных фигур используем центрированную позицию с отступами
-                return getComplexShapeTextPosition(width, height, textAlign, textAlignVertical);
-            case ShapeType.ROUND_RECTANGLE:
-            case ShapeType.RECTANGLE:
-            default:
-                return getRectangleTextPosition(width, height, textAlign, textAlignVertical);
-        }
-    };
-
-    // Функция для расчета позиции текста для сложных фигур
-    const getComplexShapeTextPosition = (width, height, alignmentH, alignmentV) => {
-        // Установим меньшие отступы для сложных фигур
-        const safeMargin = MARGIN * 0.8;
-        
-        // Получаем базовое положение для прямоугольника,
-        // но с немного большими отступами для избежания пересечений с границами
-        let x, y;
-        
-        if (alignmentH === 'left') {
-            x = safeMargin * 1.2;
-        } else if (alignmentH === 'right') {
-            x = width - safeMargin * 1.2;
-        } else {
-            x = width / 2;
-        }
-        
-        if (alignmentV === 'top') {
-            y = safeMargin * 1.2;
-        } else if (alignmentV === 'bottom') {
-            y = height - safeMargin * 1.2;
-        } else {
-            y = height / 2;
-        }
-        
-        return { x, y };
-    };
-
-    const getShapeElement = (shapeType, shapeWidth, shapeHeight, props = {}) => {
-        switch (shapeType) {
-            case ShapeType.CIRCLE:
-                return (
-                    <ellipse
-                        cx={shapeWidth / 2}
-                        cy={shapeHeight / 2}
-                        rx={shapeWidth / 2}
-                        ry={shapeHeight / 2}
-                        {...props}
-                    />
-                );
-            case ShapeType.ROUND_RECTANGLE:
-                return <rect width={shapeWidth} height={shapeHeight} rx={ROUND_RECTANGLE_RADIUS} ry={ROUND_RECTANGLE_RADIUS} {...props} />;
-            case ShapeType.RECTANGLE:
-                return <rect width={shapeWidth} height={shapeHeight} {...props} />;
-            case ShapeType.RHOMBUS:
-                const halfWidth = shapeWidth / 2;
-                const halfHeight = shapeHeight / 2;
-                const points = `${halfWidth},0 ${shapeWidth},${halfHeight} ${halfWidth},${shapeHeight} 0,${halfHeight}`;
-                return <polygon points={points} {...props} />;
-            case ShapeType.TRIANGLE:
-                return <polygon points={`${shapeWidth/2},0 ${shapeWidth},${shapeHeight} 0,${shapeHeight}`} {...props} />;
-            case ShapeType.PARALLELOGRAM:
-                const offset = shapeWidth * 0.25;
-                return <polygon points={`${offset},0 ${shapeWidth},0 ${shapeWidth-offset},${shapeHeight} 0,${shapeHeight}`} {...props} />;
-            case ShapeType.TRAPEZOID:
-                const trapOffset = shapeWidth * 0.15;
-                return <polygon points={`${trapOffset},0 ${shapeWidth-trapOffset},0 ${shapeWidth},${shapeHeight} 0,${shapeHeight}`} {...props} />;
-            case ShapeType.PENTAGON:
-                return createRegularPolygon(shapeWidth/2, shapeHeight/2, Math.min(shapeWidth, shapeHeight)/2, 5, props);
-            case ShapeType.HEXAGON:
-                return createRegularPolygon(shapeWidth/2, shapeHeight/2, Math.min(shapeWidth, shapeHeight)/2, 6, props);
-            case ShapeType.OCTAGON:
-                return createRegularPolygon(shapeWidth/2, shapeHeight/2, Math.min(shapeWidth, shapeHeight)/2, 8, props);
-            case ShapeType.STAR:
-                return createStar(shapeWidth/2, shapeHeight/2, Math.min(shapeWidth, shapeHeight)/2, 5, props);
-            case ShapeType.CLOUD:
-                // Упрощенное представление облака через несколько эллипсов
-                return (
-                    <path 
-                        d={`M${shapeWidth*0.2},${shapeHeight*0.5} 
-                           C${shapeWidth*0.1},${shapeHeight*0.3} ${shapeWidth*0.3},${shapeHeight*0.1} ${shapeWidth*0.5},${shapeHeight*0.2}
-                           C${shapeWidth*0.6},${shapeHeight*0.05} ${shapeWidth*0.8},${shapeHeight*0.1} ${shapeWidth*0.9},${shapeHeight*0.3}
-                           C${shapeWidth*1.05},${shapeHeight*0.4} ${shapeWidth*1.0},${shapeHeight*0.6} ${shapeWidth*0.9},${shapeHeight*0.7}
-                           C${shapeWidth*0.9},${shapeHeight*0.8} ${shapeWidth*0.7},${shapeHeight*0.9} ${shapeWidth*0.5},${shapeHeight*0.8}
-                           C${shapeWidth*0.3},${shapeHeight*0.9} ${shapeWidth*0.1},${shapeHeight*0.7} ${shapeWidth*0.2},${shapeHeight*0.5}
-                           Z`}
-                        {...props}
-                    />
-                );
-            default:
-                // Если тип не распознан, возвращаем простой прямоугольник
-                return <rect width={shapeWidth} height={shapeHeight} {...props} />;
-        }
-    };
-
-    // Вспомогательная функция для создания многоугольника с заданным числом сторон
-    const createRegularPolygon = (cx, cy, r, sides, props = {}) => {
-        let points = '';
-        for (let i = 0; i < sides; i++) {
-            const angle = (i * 2 * Math.PI / sides) - Math.PI/2;  // начинаем с верхней точки
-            const x = cx + r * Math.cos(angle);
-            const y = cy + r * Math.sin(angle);
-            points += `${x},${y} `;
-        }
-        return <polygon points={points.trim()} {...props} />;
-    };
-
-    // Вспомогательная функция для создания звезды
-    const createStar = (cx, cy, r, points = 5, props = {}) => {
-        const innerRadius = r * 0.4;
-        let pathData = '';
-        for (let i = 0; i < points * 2; i++) {
-            const radius = i % 2 === 0 ? r : innerRadius;
-            const angle = (i * Math.PI / points) - Math.PI/2;
-            const x = cx + radius * Math.cos(angle);
-            const y = cy + radius * Math.sin(angle);
-            if (i === 0) {
-                pathData += `M${x},${y} `;
-            } else {
-                pathData += `L${x},${y} `;
-            }
-        }
-        pathData += 'Z';
-        return <path d={pathData} {...props} />;
-    };
-
-    // Мемоизированные вычисления позиции текста
-    const textPosition = useMemo(() => {
-        return getTextPositionForShape(
-            currentShape,
-            width,
-            height,
-            textAlign,
-            textAlignVertical
-        );
-    }, [currentShape, width, height, textAlign, textAlignVertical]);
-
-    // Оптимизированное вычисление стилей для SVG элементов
-    const shapeStyles = useMemo(() => {
-        // Определение паттерна для штриховой линии на основе стиля
-        let strokeDasharray;
-        if (borderStyle === BorderStyleType.DOTTED) {
-            strokeDasharray = '2,6';
-        } else if (borderStyle === BorderStyleType.DASHED) {
-            strokeDasharray = '10,6';
-        }
-        
-        return {
+    
+    const shapeStyles = useMemo(
+        () => ({
             fill: backgroundRgba,
-            stroke: hexToRgba(borderColor, parseFloat(borderOpacity)),
-            strokeWidth: effectiveBorderWidth,
-            ...(strokeDasharray && { strokeDasharray }),
-        };
-    }, [backgroundRgba, borderColor, borderOpacity, effectiveBorderWidth, borderStyle]);
+            stroke: borderColorRgba,
+            strokeWidth: borderWidth,
+            ...borderExtra,
+        }),
+        [backgroundRgba, borderColorRgba, borderWidth, borderExtra]
+    );
 
-    // Стили текста для отображения в SVG
-    const textStyles = useMemo(() => {
-        return {
-            pointerEvents: 'none',
-            fontFamily,
-            fontSize: `${fontSize}px`,
-            fontWeight: 'normal',
-            textAnchor: textAlign === TextAlignType.LEFT
-                ? 'start'
+    // Стили для текста
+    const textStyles = useMemo(() => ({
+        pointerEvents: 'none',
+        fontFamily,
+        fontSize: `${fontSize}px`,
+        fontWeight: 'normal',
+        // textAnchor: "middle",
+        // dominantBaseline: "middle"
+        textAnchor: textAlign === TextAlignType.LEFT
+            ? 'start'
                 : textAlign === TextAlignType.RIGHT
-                    ? 'end'
-                    : 'middle',
-            dominantBaseline: textAlignVertical === TextAlignVerticalType.TOP
+                ? 'end'
+                : 'middle',
+        dominantBaseline: textAlignVertical === TextAlignVerticalType.TOP
                 ? 'hanging'
                 : textAlignVertical === TextAlignVerticalType.BOTTOM
                     ? 'baseline'
-                    : 'middle',
-        };
-    }, [fontFamily, fontSize, textAlign, textAlignVertical]);
+                : 'middle',
+    }), [fontFamily, fontSize, textAlign, textAlignVertical]);
 
-    // Мемоизированные обработчики событий
+    // Позиция текста
+    // const textPosition = useMemo(() =>
+    //     getTextPosition(currentShape, width, height, textAlign, textAlignVertical, PADDING),
+    //     [currentShape, width, height, textAlign, textAlignVertical]
+    // );
+
+    const textPosition = getTextPosition(
+        currentShape,                  // ← новый аргумент
+        width,
+        height,
+        textAlign,
+        textAlignVertical,
+        borderWidth,                   // strokeWidth
+        PADDING
+    );
+
+
+    // Обработчики для изменений
     const handleShapeTypeChange = useCallback((value) => {
         handleDataChange({ shape: value });
-        setShapePickerVisible(false);
     }, [handleDataChange]);
     
     const handleFontFamilyChange = useCallback((value) => {
@@ -566,7 +1097,6 @@ export const ShapeNode = memo((props) => {
     
     const handleTextColorChange = useCallback((color) => {
         handleStyleChange({ color: color.hex });
-        setTextColorVisible(false);
     }, [handleStyleChange]);
     
     const handleFillColorChange = useCallback((color) => {
@@ -574,19 +1104,15 @@ export const ShapeNode = memo((props) => {
     }, [handleStyleChange]);
     
     const handleFillOpacityChange = useCallback((value) => {
-        // Убеждаемся, что передаем значение, которое будет правильно обработано
-        // Даже если придет значение 0, мы хотим его сохранить
         handleStyleChange({ fillOpacity: value });
     }, [handleStyleChange]);
     
     const handleTextAlignChange = useCallback((value) => {
         handleStyleChange({ textAlign: value });
-        setAlignmentVisible(false);
     }, [handleStyleChange]);
     
     const handleTextAlignVerticalChange = useCallback((value) => {
         handleStyleChange({ textAlignVertical: value });
-        setAlignmentVisible(false);
     }, [handleStyleChange]);
     
     const handleBorderColorChange = useCallback((color) => {
@@ -594,333 +1120,341 @@ export const ShapeNode = memo((props) => {
     }, [handleStyleChange]);
     
     const handleBorderOpacityChange = useCallback((value) => {
-        // Убеждаемся, что передаем значение, которое будет правильно обработано
-        // Даже если придет значение 0, мы хотим его сохранить
         handleStyleChange({ borderOpacity: value });
     }, [handleStyleChange]);
     
     const handleBorderStyleChange = useCallback((value) => {
         handleStyleChange({ borderStyle: value });
-        setBorderSettingsVisible(false);
     }, [handleStyleChange]);
     
     const handleBorderWidthChange = useCallback((value) => {
         handleStyleChange({ borderWidth: value });
     }, [handleStyleChange]);
 
-    // Эффект для очистки ресурсов при размонтировании компонента
-    useEffect(() => {
-        let isMounted = true;
-        
-        return () => {
-            isMounted = false;
-            // Здесь можно добавить очистку для любых throttled/debounced функций
-        };
-    }, []);
+    // Создаем мемоизированный тулбар, который будем передавать в BaseNode
+    const shapeToolbar = useMemo(() => (
+        <ShapeToolbar
+            selected={selected}
+            currentShape={currentShape}
+            fontFamily={fontFamily}
+            fontSize={fontSize}
+            color={color}
+            fillColor={fillColor}
+            fillOpacity={fillOpacity}
+            textAlign={textAlign}
+            textAlignVertical={textAlignVertical}
+            borderColor={borderColor}
+            borderOpacity={borderOpacity}
+            borderStyle={borderStyle}
+            borderWidth={borderWidth}
+            onShapeTypeChange={handleShapeTypeChange}
+            onFontFamilyChange={handleFontFamilyChange}
+            onFontSizeChange={handleFontSizeChange}
+            onTextColorChange={handleTextColorChange}
+            onFillColorChange={handleFillColorChange}
+            onFillOpacityChange={handleFillOpacityChange}
+            onTextAlignChange={handleTextAlignChange}
+            onTextAlignVerticalChange={handleTextAlignVerticalChange}
+            onBorderColorChange={handleBorderColorChange}
+            onBorderOpacityChange={handleBorderOpacityChange}
+            onBorderStyleChange={handleBorderStyleChange}
+            onBorderWidthChange={handleBorderWidthChange}
+        />
+    ), [
+        selected, currentShape, fontFamily, fontSize, color, fillColor, fillOpacity,
+        textAlign, textAlignVertical, borderColor, borderOpacity, borderStyle, borderWidth,
+        handleShapeTypeChange, handleFontFamilyChange, handleFontSizeChange, handleTextColorChange,
+        handleFillColorChange, handleFillOpacityChange, handleTextAlignChange, handleTextAlignVerticalChange,
+        handleBorderColorChange, handleBorderOpacityChange, handleBorderStyleChange, handleBorderWidthChange
+    ]);
+
+    // Создаем содержимое тулбара
+    const shapeToolbarContent = useMemo(() => (
+        <>
+            <Popover
+                getPopupContainer={(trigger) => trigger.parentElement}
+                content={
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '300px', overflowY: 'auto' }}>
+                        {shapeOptions.map((opt) => (
+                            <Button
+                                key={opt.value}
+                                type={opt.value === currentShape ? 'primary' : 'default'}
+                                onClick={() => {
+                                    handleShapeTypeChange(opt.value);
+                                }}
+                            >
+                                {opt.label}
+                            </Button>
+                        ))}
+                    </div>
+                }
+                title="Выберите фигуру"
+                trigger="click"
+            >
+                <Button>
+                    {shapeOptions.find((s) => s.value === currentShape)?.label || 'Фигура'}
+                </Button>
+            </Popover>
+
+            <Select
+                value={fontFamily}
+                onChange={handleFontFamilyChange}
+                variant={"filled"}
+                style={{ width: 120, minWidth: 80 }}
+                options={Object.values(FontFamilyType).map((font) => ({ value: font, label: font }))}
+            />
+
+            <InputNumber
+                value={fontSize}
+                onChange={handleFontSizeChange}
+                min={1}
+                variant={"filled"}
+                style={{ width: 60, textAlign: 'center' }}
+            />
+
+            <Popover
+                getPopupContainer={(trigger) => trigger.parentElement}
+                content={
+                    <CirclePicker
+                        color={color}
+                        onChangeComplete={handleTextColorChange}
+                    />
+                }
+                title="Text Color"
+                trigger="click"
+            >
+                <button
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer'
+                    }}
+                    title="Text Color"
+                >
+                    <FontColorsOutlined style={{ fontSize: '20px' }} />
+                </button>
+            </Popover>
+
+            <Popover
+                getPopupContainer={(trigger) => trigger.parentElement}
+                content={
+                    <div style={{ padding: '6px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div>
+                            <div style={{ fontSize: '12px', marginBottom: '4px' }}>Fill Opacity</div>
+                            <Slider
+                                min={0}
+                                max={1}
+                                step={0.05}
+                                value={typeof fillOpacity === 'number' ? fillOpacity : parseFloat(fillOpacity) || 0}
+                                onChange={handleFillOpacityChange}
+                            />
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '12px', marginBottom: '4px' }}>Fill Color</div>
+                            <CirclePicker
+                                color={fillColor}
+                                onChangeComplete={handleFillColorChange}
+                            />
+                        </div>
+                    </div>
+                }
+                title="Fill Settings"
+                trigger="click"
+            >
+                <button
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer'
+                    }}
+                    title="Fill Settings"
+                >
+                    <BgColorsOutlined style={{ fontSize: '20px' }} />
+                </button>
+            </Popover>
+
+            <Popover
+                getPopupContainer={(trigger) => trigger.parentElement}
+                content={
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+                            <Button
+                                type="text"
+                                onClick={() => handleTextAlignChange(TextAlignType.LEFT)}
+                                style={{ opacity: textAlign === TextAlignType.LEFT ? 1 : 0.5 }}
+                            >
+                                <span style={{ fontSize: '18px' }}>←</span>
+                            </Button>
+                            <Button
+                                type="text"
+                                onClick={() => handleTextAlignChange(TextAlignType.CENTER)}
+                                style={{ opacity: textAlign === TextAlignType.CENTER ? 1 : 0.5 }}
+                            >
+                                <span style={{ fontSize: '18px' }}>↔</span>
+                            </Button>
+                            <Button
+                                type="text"
+                                onClick={() => handleTextAlignChange(TextAlignType.RIGHT)}
+                                style={{ opacity: textAlign === TextAlignType.RIGHT ? 1 : 0.5 }}
+                            >
+                                <span style={{ fontSize: '18px' }}>→</span>
+                            </Button>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+                            <Button
+                                type="text"
+                                onClick={() => handleTextAlignVerticalChange(TextAlignVerticalType.TOP)}
+                                style={{ opacity: textAlignVertical === TextAlignVerticalType.TOP ? 1 : 0.5 }}
+                            >
+                                <span style={{ fontSize: '18px' }}>↑</span>
+                            </Button>
+                            <Button
+                                type="text"
+                                onClick={() => handleTextAlignVerticalChange(TextAlignVerticalType.MIDDLE)}
+                                style={{ opacity: textAlignVertical === TextAlignVerticalType.MIDDLE ? 1 : 0.5 }}
+                            >
+                                <span style={{ fontSize: '18px' }}>↕</span>
+                            </Button>
+                            <Button
+                                type="text"
+                                onClick={() => handleTextAlignVerticalChange(TextAlignVerticalType.BOTTOM)}
+                                style={{ opacity: textAlignVertical === TextAlignVerticalType.BOTTOM ? 1 : 0.5 }}
+                            >
+                                <span style={{ fontSize: '18px' }}>↓</span>
+                            </Button>
+                        </div>
+                    </div>
+                }
+                title="Alignment"
+                trigger="click"
+                placement="bottom"
+            >
+                <button
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer'
+                    }}
+                    title="Alignment"
+                >
+                    <AlignCenterOutlined style={{ fontSize: '20px' }} />
+                </button>
+            </Popover>
+
+            <Popover
+                getPopupContainer={(trigger) => trigger.parentElement}
+                content={
+                    <div style={{ padding: '6px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div>
+                            <div style={{ fontSize: '12px', marginBottom: '4px' }}>Border Opacity</div>
+                            <Slider
+                                min={0}
+                                max={1}
+                                step={0.05}
+                                value={typeof borderOpacity === 'number' ? borderOpacity : parseFloat(borderOpacity) || 0}
+                                onChange={handleBorderOpacityChange}
+                            />
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '12px', marginBottom: '4px' }}>Border Style</div>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <Button
+                                    type={borderStyle === BorderStyleType.NONE || borderStyle === BorderStyleType.SOLID ? "primary" : "default"}
+                                    onClick={() => handleBorderStyleChange(BorderStyleType.SOLID)}
+                                >
+                                    <TfiLayoutLineSolid size={30} />
+                                </Button>
+                                <Button
+                                    type={borderStyle === BorderStyleType.DOTTED ? "primary" : "default"}
+                                    onClick={() => handleBorderStyleChange(BorderStyleType.DOTTED)}
+                                >
+                                    <TbLineDotted size={30} />
+                                </Button>
+                                <Button
+                                    type={borderStyle === BorderStyleType.DASHED ? "primary" : "default"}
+                                    onClick={() => handleBorderStyleChange(BorderStyleType.DASHED)}
+                                >
+                                    <TbLineDashed size={30} />
+                                </Button>
+                            </div>
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '12px', marginBottom: '4px' }}>Border Width</div>
+                            <Slider
+                                min={0}
+                                max={10}
+                                step={0.5}
+                                value={parseFloat(borderWidth)}
+                                onChange={handleBorderWidthChange}
+                            />
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '12px', marginBottom: '4px' }}>Border Color</div>
+                            <CirclePicker
+                                color={borderColor}
+                                onChangeComplete={handleBorderColorChange}
+                            />
+                        </div>
+                    </div>
+                }
+                title="Border Settings"
+                trigger="click"
+            >
+                <button
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer'
+                    }}
+                    title="Border Settings"
+                >
+                    <FaRegCircle style={{ fontSize: '20px' }} />
+                </button>
+            </Popover>
+        </>
+    ), [
+        currentShape, fontFamily, fontSize, color, fillColor, fillOpacity,
+        textAlign, textAlignVertical, borderColor, borderOpacity, borderStyle, borderWidth,
+        handleShapeTypeChange, handleFontFamilyChange, handleFontSizeChange, handleTextColorChange,
+        handleFillColorChange, handleFillOpacityChange, handleTextAlignChange, handleTextAlignVerticalChange,
+        handleBorderColorChange, handleBorderOpacityChange, handleBorderStyleChange, handleBorderWidthChange,
+        shapeOptions
+    ]);
 
     return (
-        <BaseNode id={id} data={data} selected={selected} positionAbsoluteX={positionAbsoluteX} positionAbsoluteY={positionAbsoluteY}>
+        <BaseNode 
+            id={id} 
+            data={data} 
+            selected={selected} 
+            positionAbsoluteX={positionAbsoluteX} 
+            positionAbsoluteY={positionAbsoluteY}
+            toolbarContent={shapeToolbarContent}
+        >
             <div style={innerStyle}>
-                <svg
+                <ShapeRenderer
+                    shapeType={currentShape}
                     width={width}
                     height={height}
-                    viewBox={svgDimensions.viewBox}
-                    preserveAspectRatio="none"
-                    style={{ overflow: 'hidden' }}
-                >
-                    <defs>
-                        <clipPath id={`clipShape-${id}`}>
-                            {getShapeElement(currentShape, width, height)}
-                        </clipPath>
-                    </defs>
-                    {getShapeElement(currentShape, width, height, shapeStyles)}
-                    <g clipPath={`url(#clipShape-${id})`}>
-                        <text
-                            x={textPosition.x}
-                            y={textPosition.y}
-                            fill={color}
-                            style={textStyles}
-                        >
-                            {nodeContent}
-                        </text>
-                    </g>
-                </svg>
-
-                <NodeToolbar
-                    onDoubleClick={(e) => e.stopPropagation()}
-                    isVisible={selected}
-                    position="top"
-                    className="bg-white rounded shadow-sm"
-                    style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '12px' }}
-                >
-                    {/* Новый элемент в самом начале для выбора типа фигуры */}
-                    <Popover
-                        getPopupContainer={(trigger) => trigger.parentElement}
-                        content={
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '300px', overflowY: 'auto' }}>
-                                {shapeOptions.map((opt) => (
-                                    <Button
-                                        key={opt.value}
-                                        type={opt.value === currentShape ? 'primary' : 'default'}
-                                        onClick={() => {
-                                            handleShapeTypeChange(opt.value);
-                                        }}
-                                    >
-                                        {opt.label}
-                                    </Button>
-                                ))}
-                            </div>
-                        }
-                        title="Выберите фигуру"
-                        trigger="click"
-                        visible={shapePickerVisible}
-                        onVisibleChange={setShapePickerVisible}
-                    >
-                        <Button onClick={() => setShapePickerVisible(true)}>
-                            {shapeOptions.find((s) => s.value === currentShape)?.label || 'Фигура'}
-                        </Button>
-                    </Popover>
-
-                    {/* Остальные элементы панели инструментов, связанные с настройкой шрифта, цвета, заливки, выравнивания и обводки */}
-                    <Select
-                        value={fontFamily}
-                        onChange={(val) => handleFontFamilyChange(val)}
-                        variant={"filled"}
-                        style={{ width: 120, minWidth: 80 }}
-                        options={Object.values(FontFamilyType).map((font) => ({ value: font, label: font }))}
-                    />
-
-                    <InputNumber
-                        value={fontSize}
-                        onChange={(val) => handleFontSizeChange(val)}
-                        min={1}
-                        variant={"filled"}
-                        style={{ width: 60, textAlign: 'center' }}
-                    />
-
-                    <Popover
-                        getPopupContainer={(trigger) => trigger.parentElement}
-                        content={
-                            <CirclePicker
-                                color={color}
-                                onChangeComplete={(newColor) => {
-                                    handleTextColorChange(newColor);
-                                }}
-                            />
-                        }
-                        title="Text Color"
-                        trigger="click"
-                    >
-                        <button
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                background: 'transparent',
-                                border: 'none',
-                                cursor: 'pointer'
-                            }}
-                            title="Text Color"
-                            onClick={() => setTextColorVisible(true)}
-                        >
-                            <FontColorsOutlined style={{ fontSize: '20px' }} />
-                        </button>
-                    </Popover>
-
-                    <Popover
-                        getPopupContainer={(trigger) => trigger.parentElement}
-                        content={
-                            <div style={{ padding: '6px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                <div>
-                                    <div style={{ fontSize: '12px', marginBottom: '4px' }}>Fill Opacity</div>
-                                    <Slider
-                                        min={0}
-                                        max={1}
-                                        step={0.05}
-                                        value={typeof fillOpacity === 'number' ? fillOpacity : parseFloat(fillOpacity) || 0}
-                                        onChange={(val) => handleFillOpacityChange(val)}
-                                    />
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: '12px', marginBottom: '4px' }}>Fill Color</div>
-                                    <CirclePicker
-                                        color={fillColor}
-                                        onChangeComplete={(newColor) => {
-                                            handleFillColorChange(newColor);
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        }
-                        title="Fill Settings"
-                        trigger="click"
-                    >
-                        <button
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                background: 'transparent',
-                                border: 'none',
-                                cursor: 'pointer'
-                            }}
-                            title="Fill Settings"
-                        >
-                            <BgColorsOutlined style={{ fontSize: '20px' }} />
-                        </button>
-                    </Popover>
-
-                    <Popover
-                        getPopupContainer={(trigger) => trigger.parentElement}
-                        content={
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-around' }}>
-                                    <Button
-                                        type="text"
-                                        onClick={() => handleTextAlignChange(TextAlignType.LEFT)}
-                                    >
-                                        <MdFormatAlignLeft size={18} style={{ opacity: textAlign === TextAlignType.LEFT ? 1 : 0.5 }} />
-                                    </Button>
-                                    <Button
-                                        type="text"
-                                        onClick={() => handleTextAlignChange(TextAlignType.CENTER)}
-                                    >
-                                        <MdFormatAlignCenter size={18} style={{ opacity: textAlign === TextAlignType.CENTER ? 1 : 0.5 }} />
-                                    </Button>
-                                    <Button
-                                        type="text"
-                                        onClick={() => handleTextAlignChange(TextAlignType.RIGHT)}
-                                    >
-                                        <MdFormatAlignRight size={18} style={{ opacity: textAlign === TextAlignType.RIGHT ? 1 : 0.5 }} />
-                                    </Button>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-around' }}>
-                                    <Button
-                                        type="text"
-                                        onClick={() => handleTextAlignVerticalChange(TextAlignVerticalType.TOP)}
-                                    >
-                                        <MdVerticalAlignTop size={18} style={{ opacity: textAlignVertical === TextAlignVerticalType.TOP ? 1 : 0.5 }} />
-                                    </Button>
-                                    <Button
-                                        type="text"
-                                        onClick={() => handleTextAlignVerticalChange(TextAlignVerticalType.MIDDLE)}
-                                    >
-                                        <MdVerticalAlignTop
-                                            size={18}
-                                            style={{ opacity: textAlignVertical === TextAlignVerticalType.MIDDLE ? 1 : 0.5, transform: 'rotate(90deg)' }}
-                                        />
-                                    </Button>
-                                    <Button
-                                        type="text"
-                                        onClick={() => handleTextAlignVerticalChange(TextAlignVerticalType.BOTTOM)}
-                                    >
-                                        <MdVerticalAlignTop
-                                            size={18}
-                                            style={{ opacity: textAlignVertical === TextAlignVerticalType.BOTTOM ? 1 : 0.5, transform: 'rotate(180deg)' }}
-                                        />
-                                    </Button>
-                                </div>
-                            </div>
-                        }
-                        title="Alignment"
-                        trigger="click"
-                        placement="bottom"
-                    >
-                        <button
-                            type="text"
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                background: 'transparent',
-                                border: 'none',
-                                cursor: 'pointer'
-                            }}
-                            title="Alignment"
-                        >
-                            <AlignCenterOutlined style={{ fontSize: '20px' }} />
-                        </button>
-                    </Popover>
-
-                    <Popover
-                        getPopupContainer={(trigger) => trigger.parentElement}
-                        content={
-                            <div style={{ padding: '6px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                <div>
-                                    <div style={{ fontSize: '12px', marginBottom: '4px' }}>Border Opacity</div>
-                                    <Slider
-                                        min={0}
-                                        max={1}
-                                        step={0.05}
-                                        value={typeof borderOpacity === 'number' ? borderOpacity : parseFloat(borderOpacity) || 0}
-                                        onChange={(val) => handleBorderOpacityChange(val)}
-                                    />
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: '12px', marginBottom: '4px' }}>Border Style</div>
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                        <Button
-                                            type={borderStyle === BorderStyleType.NONE || borderStyle === BorderStyleType.SOLID ? "primary" : "default"}
-                                            onClick={() => handleBorderStyleChange(BorderStyleType.SOLID)}
-                                        >
-                                            <TfiLayoutLineSolid size={30} />
-                                        </Button>
-                                        <Button
-                                            type={borderStyle === BorderStyleType.DOTTED ? "primary" : "default"}
-                                            onClick={() => handleBorderStyleChange(BorderStyleType.DOTTED)}
-                                        >
-                                            <TbLineDotted size={30} />
-                                        </Button>
-                                        <Button
-                                            type={borderStyle === BorderStyleType.DASHED ? "primary" : "default"}
-                                            onClick={() => handleBorderStyleChange(BorderStyleType.DASHED)}
-                                        >
-                                            <TbLineDashed size={30} />
-                                        </Button>
-                                    </div>
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: '12px', marginBottom: '4px' }}>Border Width</div>
-                                    <Slider
-                                        min={0}
-                                        max={10}
-                                        step={0.5}
-                                        value={parseFloat(borderWidth)}
-                                        onChange={(val) => handleBorderWidthChange(val)}
-                                    />
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: '12px', marginBottom: '4px' }}>Border Color</div>
-                                    <CirclePicker
-                                        color={borderColor}
-                                        onChangeComplete={(newColor) => {
-                                            handleBorderColorChange(newColor);
-                                            setBorderSettingsVisible(false);
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        }
-                        title="Border Settings"
-                        trigger="click"
-                    >
-                        <button
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                background: 'transparent',
-                                border: 'none',
-                                cursor: 'pointer'
-                            }}
-                            title="Border Settings"
-                        >
-                            <FaRegCircle style={{ fontSize: '20px' }} />
-                        </button>
-                    </Popover>
-                </NodeToolbar>
+                    shapeStyles={shapeStyles}
+                    textPosition={textPosition}
+                    textStyles={textStyles}
+                    nodeContent={nodeContent}
+                    color={color}
+                    id={id}
+                />
             </div>
         </BaseNode>
     );
 });
-

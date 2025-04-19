@@ -597,7 +597,7 @@ const BoardPermissions = ({ boardId }) => {
                     <span className="logo-text">Miro</span>
                 </div>
                 <div className="sidebar-actions">
-                    {/* Кнопка сохранения доски */}
+                    {}
                     <Button
                         color="default"
                         variant="link"
@@ -607,7 +607,7 @@ const BoardPermissions = ({ boardId }) => {
                         title="Сохранить доску"
                     />
                     
-                    {/* Кнопка экспорта доски */}
+                    {}
                     <Button
                         color="default"
                         variant="link"
@@ -617,10 +617,10 @@ const BoardPermissions = ({ boardId }) => {
                         title="Экспортировать доску"
                     />
                     
-                    {/* Разделитель */}
+                    {}
                     <div className="sidebar-divider"></div>
                     
-                    {/* Кнопка управления доступом */}
+                    {}
                     <Button
                         color="default"
                         variant="link"
@@ -630,7 +630,7 @@ const BoardPermissions = ({ boardId }) => {
                         title="Управление доступом"
                     />
                     
-                    {/* Кнопка поделиться */}
+                    {}
                     <Button
                         color="default"
                         variant="link"
@@ -676,7 +676,7 @@ const BoardPermissions = ({ boardId }) => {
                 />
             </Drawer>
 
-            {/* Модальное окно для добавления/редактирования участников */}
+            {}
             <Modal
                 title={editMode ? "Редактировать права доступа" : "Добавить пользователя на доску"}
                 open={modalVisible}
@@ -726,7 +726,7 @@ const BoardPermissions = ({ boardId }) => {
                 </Form>
             </Modal>
 
-            {/* Модальное окно для создания ссылки-приглашения */}
+            {}
             <Modal
                 title={<div><LinkOutlined /> {existingLinkData ? "Управление ссылкой-приглашением" : "Создать ссылку-приглашение"}</div>}
                 open={shareLinkModalVisible}
@@ -751,7 +751,7 @@ const BoardPermissions = ({ boardId }) => {
                             maxUsages: 1
                         }}
                     >
-                        {/* Секция для быстрого переключения между ролями */}
+                        {}
                         <div style={{ marginBottom: 16 }}>
                             <Text style={{ display: 'block', marginBottom: 8 }}>Проверить наличие ссылок с другими правами:</Text>
                             <Space>
@@ -825,7 +825,7 @@ const BoardPermissions = ({ boardId }) => {
                                     )}
                                 </div>
                                 
-                                {/* Предупреждения о состоянии ссылки */}
+                                {}
                                 {existingLinkData.expiresAt && new Date(existingLinkData.expiresAt) < new Date() && (
                                     <div style={{ 
                                         marginTop: 8, 

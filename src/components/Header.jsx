@@ -79,7 +79,7 @@ const AppHeader = () => {
             height: '60px',
             borderBottom: '1px solid #f0f0f0'
         }}>
-            {/* Логотип */}
+            {}
             <Link 
                 to="/"
                 style={{ 
@@ -97,7 +97,7 @@ const AppHeader = () => {
                 </Title>
             </Link>
             
-            {/* Навигация */}
+            {}
             <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
                 <Menu 
                     mode="horizontal" 
@@ -124,7 +124,7 @@ const AppHeader = () => {
                 />
             </div>
             
-            {/* Профиль и авторизация */}
+            {}
             <Space size="large">
                 {isAuthenticated ? (
                     <Dropdown menu={profileMenu} placement="bottomRight" trigger={['click']}>
