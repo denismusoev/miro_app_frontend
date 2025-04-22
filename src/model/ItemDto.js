@@ -238,7 +238,7 @@ export class ItemRs {
             case 'shape':
                 this.data = new ShapeData(data);
                 this.style = style ? new ShapeStyle(style) : new ShapeStyle();
-                console.log("SHAPE", this.data);
+                // console.log("SHAPE", this.data);
                 break;
             case 'card':
                 this.data = new CardData(data);

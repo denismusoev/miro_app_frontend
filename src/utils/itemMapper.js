@@ -1,7 +1,8 @@
 import { ItemRs} from '../model/ItemDto';
+import { ProjectContext } from '../components/ProjectProvider';
 
 
-export const itemToNode = (item) => {
+export const itemToNode = (item, userLogin = null) => {
 
     const itemRs = new ItemRs(item);
 
@@ -18,23 +19,31 @@ export const itemToNode = (item) => {
         delete restData.content;
     }
 
+    // Добавляем информацию о блокировке, если она присутствует в данных с сервера
+    const lockData = {
+        isLocked: item.isLocked || false,
+        lockedBy: item.lockedBy === userLogin ? "me" : item.lockedBy
+    };
 
     const nodeData = {
         ...restData,
         label,
         geometry: { ...geometry },
         style,
-        position: { x: position.x - geometry.width / 2, y: position.y - geometry.height / 2 },
+        position: { x: position.x, y: position.y },
         parentId,
         boardId,
-        functions: {}
+        functions: {},
+        // Добавляем информацию о блокировке в данные узла
+        ...lockData
     };
 
 
     const nodeBase = {
         id: id.toString(),
         type: type,
-        position: { x: position.x - geometry.width / 2, y: position.y - geometry.height / 2 },
+        // position: { x: position.x - geometry.width / 2, y: position.y - geometry.height / 2 },
+        position: { x: position.x, y: position.y },
         width: geometry.width,
         height: geometry.height,
         data: nodeData
@@ -69,7 +78,7 @@ export const itemToNode = (item) => {
 export const nodeToItem = (node) => {
     const { id, type, parentId, position, width, height, data, extent } = node;
     // Извлекаем специальные поля из node.data
-    const { label, geometry, additionalPosition, style, boardId, functions, ...restData } = data;
+    const { label, geometry, additionalPosition, style, boardId, functions, isLocked, lockedBy, ...restData } = data;
 
     // В зависимости от типа, устанавливаем title или content
     let newData = { ...restData };
@@ -93,8 +102,8 @@ export const nodeToItem = (node) => {
     return {
         id,
         position: {
-            x: position.x + geometry.width / 2,
-            y: position.y + geometry.height / 2,
+            x: position.x,
+            y: position.y,
             relativeTo: additionalPosition ? additionalPosition.relativeTo : null,
             origin: additionalPosition ? additionalPosition.origin : null,
         },
@@ -104,5 +113,8 @@ export const nodeToItem = (node) => {
         parentId: finalParentId, // Используем проверенное значение
         boardId,
         type,
+        // Добавляем информацию о блокировке, если она есть
+        isLocked: isLocked || false,
+        lockedBy: lockedBy || null
     };
 };

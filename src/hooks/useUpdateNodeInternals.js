@@ -21,7 +21,7 @@ export const useUpdateNodeInternals = () => {
         timeoutRef.current = setTimeout(() => {
             const nodeIds = Array.from(pendingUpdatesRef.current);
             nodeIds.forEach(id => {
-                console.log(`🔄 Принудительное обновление внутренностей узла: ${id}`);
+                // console.log(`🔄 Принудительное обновление внутренностей узла: ${id}`);
                 updateNodeInternals(id);
             });
             pendingUpdatesRef.current.clear();

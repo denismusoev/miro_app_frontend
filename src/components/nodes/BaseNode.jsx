@@ -16,6 +16,64 @@ export const BaseNode = memo(({ id, data, selected, children, positionAbsoluteX,
     functionsRef.current = data.functions;
   }, [data.functions]);
 
+  // Проверяем, заблокирован ли узел
+  const isLocked = data.isLocked;
+  const lockedBy = data.lockedBy;
+  
+  // Проверка, заблокирован ли узел текущим пользователем
+  const isLockedByMe = isLocked && lockedBy === "me";
+  // Проверка, заблокирован ли узел другим пользователем
+  const isLockedByOther = isLocked && lockedBy !== "me";
+
+  // Стили для различных состояний узла
+  const lockedStyle = useMemo(() => {
+    if (!isLocked) return {};
+    
+    // Базовые стили для заблокированного состояния
+    const baseLockedStyle = {
+      pointerEvents: 'none',
+      opacity: 0.6,
+    };
+    
+    // Если заблокирован другим пользователем - добавляем красную рамку
+    if (isLockedByOther) {
+      return {
+        ...baseLockedStyle,
+        border: '2px dashed #ff6b6b'
+      };
+    }
+    
+    // Если заблокирован текущим пользователем - просто базовые стили
+    return baseLockedStyle;
+  }, [isLocked, isLockedByMe, isLockedByOther]);
+
+  // Стиль для выделенного узла, заблокированного другим пользователем
+  const selectedLockedStyle = useMemo(() => {
+    if (selected && isLockedByOther) {
+      return {
+        boxShadow: '0 0 0 2px #ff69b4', // Розовая рамка для выделенного заблокированного узла
+        border: '2px solid #ff69b4'
+      };
+    }
+    return {};
+  }, [selected, isLockedByOther]);
+
+  // Мемоизированный стиль для индикатора блокировки
+  const lockIndicatorStyle = useMemo(() => ({
+    position: 'absolute',
+    top: -25,
+    right: 0,
+    fontSize: '10px',
+    backgroundColor: isLockedByMe ? '#4caf50' : '#ff6b6b', // Зеленый для моей блокировки, красный для чужой
+    color: '#fff',
+    padding: '2px 6px',
+    borderRadius: '4px',
+    whiteSpace: 'nowrap',
+    pointerEvents: 'none',
+    display: isLocked ? 'block' : 'none',
+    zIndex: 1000
+  }), [isLocked, isLockedByMe]);
+
   // Начинаем редактирование – отключаем перетаскивание
   const startEditing = useCallback(() => {
     setIsEditing(true);
@@ -24,6 +82,7 @@ export const BaseNode = memo(({ id, data, selected, children, positionAbsoluteX,
 
   // Завершаем редактирование – вызываем обновление и включаем перетаскивание
   const finishEditing = useCallback(() => {
+    console.log(functionsRef.current.onLabelChange);
     functionsRef.current?.onLabelChange?.(id, value);
     setIsEditing(false);
     functionsRef.current?.enableDragging?.();
@@ -43,15 +102,21 @@ export const BaseNode = memo(({ id, data, selected, children, positionAbsoluteX,
 
   // Обработчик для открепления узла от фрейма
   const handleDetachFromParent = useCallback(() => {
-    console.log(data.functions);
+    // console.log(data.functions);
     if (functionsRef.current?.detachFromParent) {
-      console.log("dsfsdf")
+      // console.log("dsfsdf")
       functionsRef.current.detachFromParent(id);
     }
   }, [id]);
 
   // Обработчик изменения размеров узла с расширенным подходом для предотвращения ResizeObserver loop
   const onResize = useCallback((e, newSize) => {
+    // Проверяем, подтверждена ли блокировка сервером
+    if (!data.lockConfirmed) {
+      console.log("Изменение размера отклонено: ждем подтверждения блокировки");
+      return;
+    }
+    
     // Используем requestAnimationFrame для более плавного и контролируемого обновления
     // Это помогает избежать слишком быстрых обновлений DOM, которые могут вызвать цикл ResizeObserver
     requestAnimationFrame(() => {
@@ -60,7 +125,50 @@ export const BaseNode = memo(({ id, data, selected, children, positionAbsoluteX,
         height: newSize.height,
       });
     });
+  }, [id, data.lockConfirmed]);
+
+  // Обработчики для начала и завершения изменения размера с использованием блокировок
+  const handleResizeStart = useCallback(() => {
+    console.log("Начало изменения размера узла", id);
+    // Блокируем узел перед началом изменения размера
+    functionsRef.current?.lockNode?.(id);
+    
+    // Отмечаем, что узел ожидает блокировки
+    if (functionsRef.current?.updateNodeData) {
+      functionsRef.current.updateNodeData(id, {
+        waitingForLock: true
+      });
+    }
   }, [id]);
+
+  const handleResizeEnd = useCallback(() => {
+    console.log("Завершение изменения размера узла", id);
+    
+    // Проверяем, была ли подтверждена блокировка
+    if (!data.lockConfirmed) {
+      console.log("Завершение изменения размера отменено: не была получена блокировка");
+      
+      // Сбрасываем флаг ожидания блокировки
+      if (functionsRef.current?.updateNodeData) {
+        functionsRef.current.updateNodeData(id, {
+          waitingForLock: false
+        });
+      }
+      
+      return;
+    }
+    
+    // Сбрасываем флаги блокировки
+    if (functionsRef.current?.updateNodeData) {
+      functionsRef.current.updateNodeData(id, {
+        waitingForLock: false,
+        lockConfirmed: false
+      });
+    }
+    
+    // Разблокируем узел после изменения размера
+    functionsRef.current?.unlockNode?.(id);
+  }, [id, data.lockConfirmed]);
 
   // Мемоизированные стили
   const containerStyle = useMemo(() => ({
@@ -120,7 +228,7 @@ export const BaseNode = memo(({ id, data, selected, children, positionAbsoluteX,
     borderRadius: '2px',
     whiteSpace: 'nowrap',
     pointerEvents: 'none',
-    opacity: selected ? 1 : 0,
+    opacity: 1,
     transition: 'opacity 0.2s',
   }), [selected]);
 
@@ -128,7 +236,7 @@ export const BaseNode = memo(({ id, data, selected, children, positionAbsoluteX,
   const formattedCoords = useMemo(() => {
     // Используем непосредственно данные из data.position
     if (data.position) {
-      return `X: ${Math.round(data.position.x)}, Y: ${Math.round(data.position.y)}`;
+      return `X: ${Math.round(positionAbsoluteX)}, Y: ${Math.round(positionAbsoluteY)}`;
     }
     return '';
   }, [data.position?.x, data.position?.y]); // Зависимость от реальных координат
@@ -156,11 +264,22 @@ export const BaseNode = memo(({ id, data, selected, children, positionAbsoluteX,
 
 
   return (
-    <div style={containerStyle} onDoubleClick={handleDoubleClick} className={`${isEditing ? 'editing' : ''}`}>
+    <div 
+      style={{...containerStyle, ...lockedStyle, ...selectedLockedStyle}} 
+      onDoubleClick={handleDoubleClick} 
+      className={`${isEditing ? 'editing' : ''} ${isLocked ? 'node--locked' : ''} ${isLockedByMe ? 'node--locked-by-me' : ''} ${isLockedByOther ? 'node--locked-by-other' : ''}`}
+    >
+      {/* Индикатор блокировки */}
+      {isLocked && (
+        <div style={lockIndicatorStyle}>
+          {isLockedByOther && `Занято: ${lockedBy || 'другим пользователем'}`}
+        </div>
+      )}
+
       {/* Тулбар с заданным содержимым или стандартными кнопками */}
       <NodeToolbar
         onDoubleClick={(e) => e.stopPropagation()}
-        isVisible={selected}
+        isVisible={selected && (!isLocked || isLockedByMe)}
         position="top"
         className="bg-white rounded shadow-sm"
         style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '12px' }}
@@ -199,8 +318,10 @@ export const BaseNode = memo(({ id, data, selected, children, positionAbsoluteX,
         }}
         minHeight={40}
         minWidth={40}
-        isVisible={selected}
+        isVisible={selected && (!isLocked || isLockedByMe)}
         onResize={onResize}
+        onResizeStart={handleResizeStart}
+        onResizeEnd={handleResizeEnd}
         keepAspectRatio={false}
       />
 

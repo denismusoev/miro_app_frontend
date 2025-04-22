@@ -1,4 +1,3 @@
-
 import React, { useEffect, useCallback, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useBoardWebSocket from '../hooks/useBoardWebSocket';
@@ -10,34 +9,36 @@ import BoardPermissions from '../components/BoardPermissions';
 import ExportButton from '../components/ExportButton';
 import './BoardPageDefault.css';
 import { DragProvider } from "../components/nodes/DragContext";
-import { Alert, Button, Space, Modal } from 'antd';
+import { Alert, Button, Space, Modal, message } from 'antd';
 
 export default function BoardPageDefault() {
+    // Параметры и навигация
     const { id } = useParams();
     const navigate = useNavigate();
     const boardStateRef = useRef(null);
     
-
+    // Состояния для управления ошибками
     const [showAccessDeniedModal, setShowAccessDeniedModal] = useState(false);
     const [accessError, setAccessError] = useState(null);
     
-
+    // Обработка WebSocket ошибок
     const { handleError, errors, isPermissionError } = useWebSocketErrors(false, (error) => {
-        // Если ошибка связана с правами доступа, показываем модальное окно
         if (error.isPermissionError) {
             setAccessError(error);
             setShowAccessDeniedModal(true);
         }
     });
 
-    // Обработчик входящих сообщений
+    // Обработчик входящих WebSocket сообщений
     const handleMessage = useCallback((message) => {
-        //console.log('[BoardPageDefault] handleMessage:', message);
-
+        console.log(message.type, message.data);
         switch (message.type) {
+            // Данные доски
             case 'INITIAL_DATA':
                 boardStateRef.current?.handleBoardDataFromServer(message.data);
                 break;
+                
+            // Элементы доски
             case 'CREATE_ITEM':
             case 'UPDATE_ITEM':
                 boardStateRef.current?.handleNodeUpdateFromServer(message.data);
@@ -45,6 +46,8 @@ export default function BoardPageDefault() {
             case 'DELETE_ITEM':
                 boardStateRef.current?.handleNodeRemoveFromServer?.(message.itemId);
                 break;
+                
+            // Соединения
             case 'CREATE_CONNECTOR':
             case 'UPDATE_CONNECTOR':
                 boardStateRef.current?.handleConnectionUpdateFromServer(message.data);
@@ -52,58 +55,109 @@ export default function BoardPageDefault() {
             case 'DELETE_CONNECTOR':
                 boardStateRef.current?.handleConnectionRemoveFromServer(message.connectorId);
                 break;
+                
+            // Блокировки элементов - обрабатываем в зависимости от статуса
+            // case 'LOCK':
+            //     // Обрабатываем все события блокировки через один обработчик
+            //     if (message.data && (message.data.status === 'LOCKED' || message.data.status === 'UNLOCKED' || message.data.status === 'LOCK_DENIED')) {
+            //         boardStateRef.current?.handleNodeLocked(message.data);
+            //
+            //         // Показываем уведомление при отказе в блокировке
+            //         if (message.data.status === 'LOCK_DENIED') {
+            //             message.error(`Узел занят пользователем: ${message.data.displayLockedBy || message.data.lockedByLogin || 'другой пользователь'}`, 3);
+            //         }
+            //     }
+            //     break;
+            //
+            // Эти события оставляем для совместимости, но в новой версии их заменяет LOCK с разными статусами
+            case 'ITEM_LOCKED':
+                console.log('Устаревшее событие ITEM_LOCKED, рекомендуется использовать LOCK со статусом');
+                boardStateRef.current?.handleNodeLocked({...message.data, status: 'LOCKED'});
+                break;
+            case 'ITEM_LOCK_DENIED':
+                console.log('Устаревшее событие ITEM_LOCK_DENIED, рекомендуется использовать LOCK со статусом');
+                boardStateRef.current?.handleNodeLocked({...message.data, status: 'LOCK_DENIED'});
+                message.error(`Узел занят пользователем: ${message.data.displayLockedBy || message.data.lockedByLogin || 'другой пользователь'}`, 3);
+                break;
+            case 'ITEM_UNLOCKED':
+                console.log('Устаревшее событие ITEM_UNLOCKED, рекомендуется использовать LOCK со статусом');
+                boardStateRef.current?.handleNodeUnlocked({...message.data, status: 'UNLOCKED'});
+                break;
+                
+            case 'LOCKED_ITEM_UPDATED':
+                boardStateRef.current?.handleLockedNodeUpdate(message.data);
+                break;
+                
             default:
                 console.warn('Неизвестный тип сообщения:', message.type);
                 break;
         }
     }, []);
 
-    // Подключаемся к WebSocket через наш обновленный хук с поддержкой обработки ошибок
+    // Инициализация WebSocket соединения
     const { stompClient, connected, publish } = useBoardWebSocket(id, handleMessage, handleError);
 
-    // Инициализируем логику доски
+    // Получение состояния и методов работы с доской
     const boardState = useBoardState({ stompClient, publish, connected });
     useEffect(() => {
         boardStateRef.current = boardState;
     }, [boardState]);
 
+    // Деструктурируем методы из состояния доски
     const {
+        // Состояния элементов
         nodes,
         edges,
+        
+        // Обработчики изменений
         onNodesChange,
         onEdgesChange,
         onConnect,
         onEdgeUpdate,
         onSelectionChange,
-        createNewNode,
-        removeLastNode,
-        loadBoardData,
-        loadConnectorData,
         onNodeDragStop,
         onNodeDrag,
+        onNodeDragStart,
         onEdgesDelete,
         onNodesDelete,
+        
+        // Операции с узлами
+        createNewNode,
+        removeLastNode,
+        
+        // Загрузка данных
+        loadBoardData,
+        // loadConnectorData,
+        
+        // Обработчики серверных обновлений
         handleNodeUpdateFromServer,
         handleNodeRemoveFromServer,
         handleConnectionUpdateFromServer,
         handleConnectionRemoveFromServer,
         handleBoardDataFromServer,
+        
+        // Методы блокировки узлов
+        lockNode,
+        updateLockedNode,
+        unlockNode,
+        handleNodeLocked,
+        handleNodeUnlocked,
+        handleLockedNodeUpdate
     } = boardState;
 
-    // Загружаем данные доски после установки соединения
+    // Загрузка данных при подключении
     useEffect(() => {
         if (connected && id) {
-            //console.log('[BoardPageDefault] connected -> loadBoardData', id);
             loadBoardData(id);
-            loadConnectorData(id);
+            // loadConnectorData(id);
         }
-    }, [connected, id, loadBoardData, loadConnectorData]);
+    }, [connected, id, loadBoardData]);
 
+    // Обработчики событий UI
     const handleDropNewNode = (nodeType, position) => {
         createNewNode(id, nodeType, position);
     };
     
-    // Обработчик возврата к списку досок
     const handleBackToBoards = useCallback(() => {
         navigate('/project');
     }, [navigate]);
@@ -111,10 +165,17 @@ export default function BoardPageDefault() {
     return (
         <DragProvider>
             <div className="board-page-container">
+                {/* Компонент прав доступа */}
                 <BoardPermissions boardId={id} />
                 
-                <Toolbar boardId={id} addNode={createNewNode} removeLastNode={removeLastNode} />
+                {/* Панель инструментов */}
+                <Toolbar 
+                    boardId={id} 
+                    addNode={createNewNode} 
+                    removeLastNode={removeLastNode} 
+                />
                 
+                {/* Основной компонент доски */}
                 <BoardFlow
                     nodes={nodes}
                     edges={edges}
@@ -124,14 +185,17 @@ export default function BoardPageDefault() {
                     onEdgeUpdate={onEdgeUpdate}
                     onSelectionChange={onSelectionChange}
                     onNodeDragStop={onNodeDragStop}
+                    onNodeDragStart={onNodeDragStart}
                     onNodeDrag={onNodeDrag}
                     onDropNewNode={handleDropNewNode}
                     onEdgesDelete={onEdgesDelete}
                     onNodesDelete={onNodesDelete}
                 />
                 
+                {/* Кнопка экспорта */}
                 <ExportButton />
                 
+                {/* Модальное окно ошибки доступа */}
                 <Modal
                     title="Нет доступа"
                     open={showAccessDeniedModal}

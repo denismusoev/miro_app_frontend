@@ -52,8 +52,8 @@ export const TextNode = memo(({ id, data, selected, positionAbsoluteX, positionA
     textAlign
   } = useMemo(() => {
     // Отладочный вывод
-    console.log('data.style?.fillOpacity (raw):', data.style?.fillOpacity);
-    console.log('typeof data.style?.fillOpacity:', typeof data.style?.fillOpacity);
+    // console.log('data.style?.fillOpacity (raw):', data.style?.fillOpacity);
+    // console.log('typeof data.style?.fillOpacity:', typeof data.style?.fillOpacity);
     
     // Явно проверяем и преобразуем значение fillOpacity
     let opacity;
@@ -77,7 +77,7 @@ export const TextNode = memo(({ id, data, selected, positionAbsoluteX, positionA
     }
     
     // Отладочный вывод после обработки
-    console.log('processed opacity:', opacity);
+    // console.log('processed opacity:', opacity);
     
     return {
       fontFamily: data.style?.fontFamily || FontFamilyType.ARIAL,

@@ -1,21 +1,24 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import axios from "axios";
 import {useNavigate} from "react-router-dom";
 import { Form, Input, Button, Tabs, Card, Typography, message, Layout, Row, Col } from "antd";
 import { UserOutlined, LockOutlined, MailOutlined, LoginOutlined, UserAddOutlined } from "@ant-design/icons";
+import {jwtDecode} from "jwt-decode";
+import { ProjectContext } from "../components/ProjectProvider";
 
 const { Title, Text } = Typography;
 const { Content } = Layout;
 const { TabPane } = Tabs;
 
-const API_URL = "http://localhost:8080/api/auth"; // URL бэкенда
+// const API_URL = "http://localhost:8080/api/auth"; // URL бэкенда
+const API_URL = "http://192.168.0.131:8080/api/auth"; // URL бэкенда
 
 function AuthPage({ onLogin }) {
     const [loginForm] = Form.useForm();
     const [registerForm] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-
+    const { updateUserData, setUserLogin } = useContext(ProjectContext);
 
     const handleLogin = async (values) => {
         setLoading(true);
@@ -23,10 +26,17 @@ function AuthPage({ onLogin }) {
 
             const response = await axios.post(`${API_URL}/login`, values);
             
-
-            localStorage.setItem("token", response.data.token);
+            // Сохраняем токен в localStorage
+            const token = response.data.token;
+            localStorage.setItem("token", token);
             
-
+            // Декодируем токен и получаем логин
+            const { sub: myLogin } = jwtDecode(token);
+            console.log('Мой логин из токена:', myLogin);
+            
+            // Устанавливаем логин в контекст
+            setUserLogin(myLogin);
+            
             let userData = {
                 firstName: response.data.firstName || "",
                 lastName: response.data.lastName || "",
@@ -37,7 +47,7 @@ function AuthPage({ onLogin }) {
             try {
                 const userResponse = await axios.get(`${API_URL}/me`, {
                     headers: {
-                        Authorization: `Bearer ${response.data.token}`
+                        Authorization: `Bearer ${token}`
                     }
                 });
                 
@@ -50,8 +60,8 @@ function AuthPage({ onLogin }) {
                 console.warn("Не удалось получить полный профиль пользователя:", profileError);
             }
             
-            // Сохраняем данные пользователя
-            localStorage.setItem("user", JSON.stringify(userData));
+            // Сохраняем данные пользователя в контекст и localStorage
+            updateUserData(userData);
             
             message.success("Вход выполнен успешно!");
             onLogin && onLogin();

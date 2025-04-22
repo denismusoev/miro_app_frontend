@@ -58,24 +58,22 @@ const BoardFlow = ({
                        onSelectionChange,
                        onNodeDragStop,
                        onNodeDrag,
+                       onNodeDragStart,
                        onDropNewNode,// новый пропс
                        onEdgesDelete,
                        onNodesDelete,
                    }) => {
-    const containerWidth = window.innerWidth / 2;
-    const containerHeight = window.innerHeight / 2;
-    const { id } = useParams();
 
     // Добавляем состояние для отслеживания шага сетки и текущего зума
-    const [gridGap, setGridGap] = useState(BASE_GRID_GAP);
-    const [currentZoom, setCurrentZoom] = useState(1);
+    // const [gridGap, setGridGap] = useState(BASE_GRID_GAP);
+    // const [currentZoom, setCurrentZoom] = useState(1);
     // Вычисляем шаг привязки как 1/10 от размера сетки
     const [snapGrid, setSnapGrid] = useState([BASE_GRID_GAP / 10, BASE_GRID_GAP / 10]);
 
     // Обработчик изменения размера сетки
     const handleGapChange = useCallback((newGap, newZoom) => {
-        setGridGap(newGap);
-        setCurrentZoom(newZoom);
+        // setGridGap(newGap);
+        // setCurrentZoom(newZoom);
         // Устанавливаем шаг привязки как 1/10 от размера сетки
         const snapStep = Math.max(1, Math.round(newGap / 10));
         setSnapGrid([snapStep, snapStep]);
@@ -137,6 +135,7 @@ const BoardFlow = ({
         onNodesDelete,
         onNodeDrag: onNodeDrag,
         onNodeDragStop: onNodeDragStop,
+        onNodeDragStart: onNodeDragStart,
         nodeTypes: customNodeTypes,
         edgeTypes,
         connectionLineComponent: FloatingConnectionLine,
@@ -179,17 +178,15 @@ const BoardFlow = ({
             <ReactFlow
                 {...reactFlowConfig}
                 onInit={(instance) => {
-                    //console.log("ReactFlow instance loaded:", instance);
                     setFlowInstance(instance);
                     window.reactFlowInstance = instance;
                     
-                    // Инициализируем начальный шаг привязки к сетке
                     const initialZoom = instance.getZoom();
                     const initialGap = Math.max(10, BASE_GRID_GAP / initialZoom);
                     const initialSnapStep = Math.max(1, Math.round(initialGap / 10));
                     setSnapGrid([initialSnapStep, initialSnapStep]);
-                    setCurrentZoom(initialZoom);
-                    setGridGap(initialGap);
+                    // setCurrentZoom(initialZoom);
+                    // setGridGap(initialGap);
                 }}
             >
                 <AdaptiveBackground onGapChange={handleGapChange} />
