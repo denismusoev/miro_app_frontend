@@ -19,7 +19,6 @@ export const itemToNode = (item, userLogin = null) => {
         delete restData.content;
     }
 
-    // Добавляем информацию о блокировке, если она присутствует в данных с сервера
     const lockData = {
         isLocked: item.isLocked || false,
         lockedBy: item.lockedBy === userLogin ? "me" : item.lockedBy
@@ -34,40 +33,25 @@ export const itemToNode = (item, userLogin = null) => {
         parentId,
         boardId,
         functions: {},
-        // Добавляем информацию о блокировке в данные узла
         ...lockData
     };
 
 
     const nodeBase = {
-        id: id.toString(),
+        id: String(id),
         type: type,
         // position: { x: position.x - geometry.width / 2, y: position.y - geometry.height / 2 },
         position: { x: position.x, y: position.y },
-        width: geometry.width,
-        height: geometry.height,
+        measured:{
+            width: geometry.width,
+            height: geometry.height
+        },
         data: nodeData
     };
-    //
-    // const nodeBase = {
-    //     id: id.toString(),
-    //     type: type,
-    //     position: { x: position.x, y: position.y },
-    //     width: geometry.width,
-    //     height: geometry.height,
-    //     data: nodeData
-    // };
 
-    // Если у узла есть родитель, добавляем parentId и extent
     if (parentId) {
-        // console.log(`Узел ${id} имеет родителя ${parentId}`);
-        nodeBase.parentId = parentId.toString();
-        
-        // Для узлов с родителем, position определяется относительно родителя
-        // console.log(`Позиция узла ${id}:`, nodeBase.position);
+        nodeBase.parentId = String(parentId);
     } else {
-        // Явно устанавливаем parentId в undefined, чтобы убедиться, что его нет
-        // console.log(`Узел ${id} не имеет родителя`);
         nodeBase.parentId = undefined;
     }
 
@@ -76,9 +60,10 @@ export const itemToNode = (item, userLogin = null) => {
 
 
 export const nodeToItem = (node) => {
-    const { id, type, parentId, position, width, height, data, extent } = node;
+    const { id, type, parentId, position, data } = node;
     // Извлекаем специальные поля из node.data
     const { label, geometry, additionalPosition, style, boardId, functions, isLocked, lockedBy, ...restData } = data;
+    console.log(label)
 
     // В зависимости от типа, устанавливаем title или content
     let newData = { ...restData };
@@ -88,33 +73,22 @@ export const nodeToItem = (node) => {
         newData.content = label;
     }
 
-    // Если есть extent, добавляем его в данные
-    // if (extent) {
-    //     newData.extent = extent;
-    // }
-
-    // console.log(`Преобразование узла ${id} в элемент, родитель=${parentId || 'нет'}`);
-    
-    // ВАЖНО: Проверяем, что parentId не является undefined или null
-    // Если parentId не определен, устанавливаем явно в null для сервера
+    console.log(newData);
     const finalParentId = parentId !== undefined ? parentId : null;
+    console.log(parentId !== undefined);
+    console.log(finalParentId);
 
     return {
         id,
         position: {
             x: position.x,
-            y: position.y,
-            relativeTo: additionalPosition ? additionalPosition.relativeTo : null,
-            origin: additionalPosition ? additionalPosition.origin : null,
+            y: position.y
         },
-        geometry: { ...geometry },
+        geometry: { ...node.measured },
         data: newData,
         style,
         parentId: finalParentId, // Используем проверенное значение
         boardId,
         type,
-        // Добавляем информацию о блокировке, если она есть
-        isLocked: isLocked || false,
-        lockedBy: lockedBy || null
     };
 };

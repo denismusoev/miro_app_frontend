@@ -3,8 +3,8 @@ import React, { useEffect, useState } from 'react';
 const CLIENT_ID = '3458764618211634466';
 const REDIRECT_URI = 'http://localhost:3000/miro_auth'; // тот же, что в серверном коде
 
-// const BACKEND_URL = 'http://localhost:8080';
-const BACKEND_URL = 'http://192.168.0.131:8080';
+const BACKEND_URL = 'http://localhost:8080';
+// const BACKEND_URL = 'http://192.168.0.131:8080';
 
 const MiroAuth = () => {
     const [boards, setBoards] = useState([]);

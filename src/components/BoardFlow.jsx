@@ -60,8 +60,7 @@ const BoardFlow = ({
                        onNodeDrag,
                        onNodeDragStart,
                        onDropNewNode,// новый пропс
-                       onEdgesDelete,
-                       onNodesDelete,
+                       onDelete
                    }) => {
 
     // Добавляем состояние для отслеживания шага сетки и текущего зума
@@ -129,10 +128,9 @@ const BoardFlow = ({
         onNodesChange,
         onEdgesChange,
         onConnect,
-        onEdgeUpdate,
+        // onEdgeUpdate,
         onSelectionChange,
-        onEdgesDelete,
-        onNodesDelete,
+        onDelete,
         onNodeDrag: onNodeDrag,
         onNodeDragStop: onNodeDragStop,
         onNodeDragStart: onNodeDragStart,
@@ -161,9 +159,8 @@ const BoardFlow = ({
         onConnect, 
         onEdgeUpdate, 
         onSelectionChange, 
-        onEdgesDelete, 
-        onNodesDelete, 
-        onNodeDragStop, 
+        onDelete,
+        onNodeDragStop,
         snapGrid
     ]);
 

@@ -75,8 +75,8 @@ dayjs.locale('ru');
 
 const CLIENT_ID = "3458764618211634466";
 const REDIRECT_BASE = "http://localhost:3000/project"; // Ваш фронтенд URL
-// const BACKEND_URL = "http://localhost:8080";   // Ваш бэкенд
-const BACKEND_URL = "http://192.168.0.131:8080";   // Ваш бэкенд
+const BACKEND_URL = "http://localhost:8080";   // Ваш бэкенд
+// const BACKEND_URL = "http://192.168.0.131:8080";   // Ваш бэкенд
 
 // Константы для ролей доступа
 const ACCESS_LEVELS = {

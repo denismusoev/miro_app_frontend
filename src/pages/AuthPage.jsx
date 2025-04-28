@@ -10,8 +10,8 @@ const { Title, Text } = Typography;
 const { Content } = Layout;
 const { TabPane } = Tabs;
 
-// const API_URL = "http://localhost:8080/api/auth"; // URL бэкенда
-const API_URL = "http://192.168.0.131:8080/api/auth"; // URL бэкенда
+const API_URL = "http://localhost:8080/api/auth"; // URL бэкенда
+// const API_URL = "http://192.168.0.131:8080/api/auth"; // URL бэкенда
 
 function AuthPage({ onLogin }) {
     const [loginForm] = Form.useForm();

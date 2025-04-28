@@ -1,8 +1,7 @@
 import React, { useEffect, useCallback, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import useBoardWebSocket from '../hooks/useBoardWebSocket';
+import useWebSocket from '../hooks/useBoardWebSocket';
 import { useBoardState } from '../hooks/useBoardState';
-import { useWebSocketErrors } from '../hooks/useWebSocketErrors';
 import Toolbar from '../components/Toolbar';
 import BoardFlow from '../components/BoardFlow';
 import BoardPermissions from '../components/BoardPermissions';
@@ -19,86 +18,98 @@ export default function BoardPageDefault() {
     
     // Состояния для управления ошибками
     const [showAccessDeniedModal, setShowAccessDeniedModal] = useState(false);
-    const [accessError, setAccessError] = useState(null);
-    
-    // Обработка WebSocket ошибок
-    const { handleError, errors, isPermissionError } = useWebSocketErrors(false, (error) => {
-        if (error.isPermissionError) {
-            setAccessError(error);
-            setShowAccessDeniedModal(true);
-        }
-    });
 
     // Обработчик входящих WebSocket сообщений
     const handleMessage = useCallback((message) => {
-        console.log(message.type, message.data);
-        switch (message.type) {
-            // Данные доски
-            case 'INITIAL_DATA':
-                boardStateRef.current?.handleBoardDataFromServer(message.data);
-                break;
-                
-            // Элементы доски
-            case 'CREATE_ITEM':
-            case 'UPDATE_ITEM':
-                boardStateRef.current?.handleNodeUpdateFromServer(message.data);
-                break;
-            case 'DELETE_ITEM':
-                boardStateRef.current?.handleNodeRemoveFromServer?.(message.itemId);
-                break;
-                
-            // Соединения
-            case 'CREATE_CONNECTOR':
-            case 'UPDATE_CONNECTOR':
-                boardStateRef.current?.handleConnectionUpdateFromServer(message.data);
-                break;
-            case 'DELETE_CONNECTOR':
-                boardStateRef.current?.handleConnectionRemoveFromServer(message.connectorId);
-                break;
-                
-            // Блокировки элементов - обрабатываем в зависимости от статуса
-            // case 'LOCK':
-            //     // Обрабатываем все события блокировки через один обработчик
-            //     if (message.data && (message.data.status === 'LOCKED' || message.data.status === 'UNLOCKED' || message.data.status === 'LOCK_DENIED')) {
-            //         boardStateRef.current?.handleNodeLocked(message.data);
-            //
-            //         // Показываем уведомление при отказе в блокировке
-            //         if (message.data.status === 'LOCK_DENIED') {
-            //             message.error(`Узел занят пользователем: ${message.data.displayLockedBy || message.data.lockedByLogin || 'другой пользователь'}`, 3);
-            //         }
-            //     }
-            //     break;
-            //
-            // Эти события оставляем для совместимости, но в новой версии их заменяет LOCK с разными статусами
-            case 'ITEM_LOCKED':
-                console.log('Устаревшее событие ITEM_LOCKED, рекомендуется использовать LOCK со статусом');
-                boardStateRef.current?.handleNodeLocked({...message.data, status: 'LOCKED'});
-                break;
-            case 'ITEM_LOCK_DENIED':
-                console.log('Устаревшее событие ITEM_LOCK_DENIED, рекомендуется использовать LOCK со статусом');
-                boardStateRef.current?.handleNodeLocked({...message.data, status: 'LOCK_DENIED'});
-                message.error(`Узел занят пользователем: ${message.data.displayLockedBy || message.data.lockedByLogin || 'другой пользователь'}`, 3);
-                break;
-            case 'ITEM_UNLOCKED':
-                console.log('Устаревшее событие ITEM_UNLOCKED, рекомендуется использовать LOCK со статусом');
-                boardStateRef.current?.handleNodeUnlocked({...message.data, status: 'UNLOCKED'});
-                break;
-                
-            case 'LOCKED_ITEM_UPDATED':
-                boardStateRef.current?.handleLockedNodeUpdate(message.data);
-                break;
-                
-            default:
-                console.warn('Неизвестный тип сообщения:', message.type);
-                break;
+        console.log("[BoardPageDefault:handleMessage]", message.type, message.data, message.error);
+        
+        // Извлекаем поля из WebSocketResponse
+        const { type, processId, senderLogin, data, error } = message;
+
+        // Проверяем, является ли сообщение ответом на операцию текущего пользователя
+        const isConfirmation = type.includes('_CONFIRMED');
+        const isFailure = type.includes('_FAILED');
+        
+        // Если это подтверждение или ошибка операции - используем специальные обработчики
+        if (isConfirmation) {
+            console.log('[BoardPageDefault:handleMessage]', isConfirmation);
+            boardStateRef.current?.handleServerConfirmation(type, processId, data);
+        } else if (isFailure) {
+            console.log('[BoardPageDefault:handleMessage]', isFailure);
+            boardStateRef.current?.handleServerError(type, processId, error);
+        } else {
+            // Для других типов сообщений используем обычную обработку
+            switch (type) {
+                // Данные доски
+                case 'INITIAL_DATA':
+                    boardStateRef.current?.handleBoardDataFromServer(data);
+                    break;
+                    
+                // Элементы доски - создание/обновление/удаление
+                case 'CREATE_ITEM':
+                case 'UPDATE_ITEM':
+                    boardStateRef.current?.handleNodeUpdateFromServer(data, type);
+                    break;
+                case 'DELETE_ITEM':
+                    boardStateRef.current?.handleNodeRemoveFromServer?.(data);
+                    break;
+                    
+                // Соединения - создание/обновление/удаление
+                case 'CREATE_CONNECTOR':
+                case 'UPDATE_CONNECTOR':
+                    boardStateRef.current?.handleConnectionUpdateFromServer(data, type);
+                    break;
+                case 'DELETE_CONNECTOR':
+                    boardStateRef.current?.handleConnectionRemoveFromServer(data);
+                    break;
+                    
+                // Блокировки элементов
+                case 'ITEM_LOCKED':
+                    console.log('[BoardPageDefault:handleMessage] Устаревшее событие ITEM_LOCKED, рекомендуется использовать LOCK со статусом');
+                    boardStateRef.current?.handleNodeLocked({...data, status: 'LOCKED'});
+                    break;
+                case 'LOCKED_ITEM_UPDATED':
+                    boardStateRef.current?.handleLockedNodeUpdate(data);
+                    break;
+                case 'ITEM_UNLOCKED':
+                    console.log('[BoardPageDefault:handleMessage] Устаревшее событие ITEM_UNLOCKED, рекомендуется использовать LOCK со статусом');
+                    boardStateRef.current?.handleNodeUnlocked({...data, status: 'UNLOCKED'});
+                    break;
+                    
+                // Ошибки
+                case 'SERVER_ERROR':
+                case 'VALIDATION_ERROR':
+                case 'PERMISSION_ERROR':
+                case 'NOT_FOUND_ERROR':
+                case 'ERROR':
+                    console.error('[BoardPageDefault:handleMessage] Серверная ошибка:', error);
+                    message.error(`Ошибка сервера: ${error?.message || 'Неизвестная ошибка'}`, 3);
+                    break;
+                    
+                default:
+                    console.warn('[BoardPageDefault:handleMessage] Неизвестный тип сообщения:', type);
+                    break;
+            }
         }
     }, []);
 
-    // Инициализация WebSocket соединения
-    const { stompClient, connected, publish } = useBoardWebSocket(id, handleMessage, handleError);
+    // Обработчик ошибок WebSocket
+    const handleErrorCallback = useCallback((error) => {
+        if (error.isPermissionError) {
+            setShowAccessDeniedModal(true);
+        }
+    }, []);
+
+    // Инициализация WebSocket соединения с использованием нового хука
+    const { connected, publish, lastError, reconnect, connectionLost } = useWebSocket(
+        id, 
+        handleMessage, 
+        false, // не показывать автоматические уведомления об ошибках
+        handleErrorCallback
+    );
 
     // Получение состояния и методов работы с доской
-    const boardState = useBoardState({ stompClient, publish, connected });
+    const boardState = useBoardState({ publish, connected });
     useEffect(() => {
         boardStateRef.current = boardState;
     }, [boardState]);
@@ -108,7 +119,7 @@ export default function BoardPageDefault() {
         // Состояния элементов
         nodes,
         edges,
-        
+
         // Обработчики изменений
         onNodesChange,
         onEdgesChange,
@@ -120,22 +131,21 @@ export default function BoardPageDefault() {
         onNodeDragStart,
         onEdgesDelete,
         onNodesDelete,
-        
+
         // Операции с узлами
         createNewNode,
         removeLastNode,
-        
+
         // Загрузка данных
         loadBoardData,
-        // loadConnectorData,
-        
+
         // Обработчики серверных обновлений
         handleNodeUpdateFromServer,
         handleNodeRemoveFromServer,
         handleConnectionUpdateFromServer,
         handleConnectionRemoveFromServer,
         handleBoardDataFromServer,
-        
+
         // Методы блокировки узлов
         lockNode,
         updateLockedNode,
@@ -149,7 +159,6 @@ export default function BoardPageDefault() {
     useEffect(() => {
         if (connected && id) {
             loadBoardData(id);
-            // loadConnectorData(id);
         }
     }, [connected, id, loadBoardData]);
 
@@ -182,7 +191,7 @@ export default function BoardPageDefault() {
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnect}
-                    onEdgeUpdate={onEdgeUpdate}
+                    // onEdgeUpdate={onEdgeUpdate}
                     onSelectionChange={onSelectionChange}
                     onNodeDragStop={onNodeDragStop}
                     onNodeDragStart={onNodeDragStart}
@@ -210,7 +219,7 @@ export default function BoardPageDefault() {
                     ]}
                 >
                     <p>
-                        {accessError?.message || 'У вас нет необходимых прав для выполнения этого действия.'}
+                        'У вас нет необходимых прав для выполнения этого действия.'
                     </p>
                     <p>
                         Обратитесь к владельцу доски для получения нужных прав доступа.
