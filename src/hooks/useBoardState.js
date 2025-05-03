@@ -9,6 +9,11 @@ import {throttle} from "lodash";
 import { v4 as uuidv4 } from 'uuid';
 import { message } from 'antd';
 
+// Устанавливаем максимальное количество уведомлений на экране
+message.config({
+    maxCount: 3, // максимум 3 уведомления одновременно
+    duration: 3   // время отображения (в секундах)
+});
 
 export const sortItemsWithParentsFirst = (items) => {
     return [...items].sort((a, b) => {
@@ -108,8 +113,26 @@ export const useBoardState = ({ publish, connected }) => {
     const prevStatesMapRef = useRef(new Map()); // Хранилище предыдущих состояний элементов
     const deletedItemsMapRef = useRef(new Map()); // Хранилище удаленных элементов
     const tempIdToRealIdMapRef = useRef(new Map()); // Связь временных и реальных ID
+    const operationsAuditRef = useRef(new Map()); // Аудит операций для отслеживания и отката
+    const lastErrorsRef = useRef({}); // Хранилище для времени последних ошибок каждого типа
 
     const safePublish = useSafePublish(connectedRef, publish);
+
+    // Функция для записи в аудит операций
+    const addToAudit = useCallback((processId, operation) => {
+        if (!processId) return;
+        
+        console.log(`[useBoardState:addToAudit] Добавление в аудит: ${processId}`, operation);
+        operationsAuditRef.current.set(processId, operation);
+    }, []);
+
+    // Функция для удаления из аудита при подтверждении операции
+    const removeFromAudit = useCallback((processId) => {
+        if (!processId) return;
+        
+        console.log(`[useBoardState:removeFromAudit] Удаление из аудита: ${processId}`);
+        operationsAuditRef.current.delete(processId);
+    }, []);
 
     // Функция для создания запроса в формате WebSocketRequest
     const createWebSocketRequest = useCallback((data) => {
@@ -174,7 +197,7 @@ export const useBoardState = ({ publish, connected }) => {
         };
     }, []);
 
-    const lockNode = useCallback((nodeId) => {
+    const sendServerLockNode = useCallback((nodeId) => {
         console.log("[useBoardState:lockNode] Запрос на блокировку узла:", nodeId);
         const data = {
             nodeId: parseInt(nodeId, 10)
@@ -186,12 +209,18 @@ export const useBoardState = ({ publish, connected }) => {
         // Явно связываем processId с nodeId для операции блокировки
         processIdMapRef.current.set(String(nodeId), processId);
         
+        // Добавляем в аудит операцию блокировки
+        addToAudit(processId, {
+            type: 'LOCK_NODE',
+            nodeId: String(nodeId)
+        });
+        
         console.log(`[useBoardState:lockNode] Связали nodeId ${nodeId} с processId ${processId} для операции блокировки`);
         
         return processId;
-    }, [publishWithProcessId]);
+    }, [publishWithProcessId, addToAudit]);
 
-    const updateLockedNode = useCallback(
+    const sendServerUpdateLockedNode = useCallback(
         throttle((node, type) => {
             setNodes(prevNodes => {
                 const existingNode = prevNodes.find(n => n.id === node.id);
@@ -240,19 +269,37 @@ export const useBoardState = ({ publish, connected }) => {
                 // Явно связываем processId с nodeId для операции обновления заблокированного узла
                 processIdMapRef.current.set(String(nodeId), processId);
                 
+                // Добавляем в аудит операцию обновления заблокированного узла
+                addToAudit(processId, {
+                    type: 'UPDATE_LOCKED_NODE',
+                    nodeId: nodeId,
+                    updateType: type,
+                    previousState: currentNode,
+                    updateData: updateData
+                });
+                
                 console.log(`[useBoardState:updateLockedNode] Связали nodeId ${nodeId} с processId ${processId} для операции обновления заблокированного узла`);
                 
                 return prevNodes;
             });
-        }, 100),
-        [publishWithProcessId]
+        }, 500),
+        [publishWithProcessId, addToAudit]
     );
 
-    const unlockNode = useCallback((nodeId) => {
+    const sendServerUnlockNode = useCallback((nodeId) => {
         console.log("[useBoardState:unlockNode] Разблокировка узла:", nodeId);
         const data = {
             nodeId: parseInt(nodeId, 10)
         };
+        
+        // Сохраняем текущее состояние узла перед разблокировкой
+        setNodes(prevNodes => {
+            const currentNode = prevNodes.find(n => String(n.id) === String(nodeId));
+            if (currentNode) {
+                prevStatesMapRef.current.set(String(nodeId), currentNode);
+            }
+            return prevNodes;
+        });
         
         // Генерируем и сохраняем processId для операции разблокировки
         const processId = publishWithProcessId('/app/items/unlock', data);
@@ -260,18 +307,24 @@ export const useBoardState = ({ publish, connected }) => {
         // Явно связываем processId с nodeId для операции разблокировки
         processIdMapRef.current.set(String(nodeId), processId);
         
+        // Добавляем в аудит операцию разблокировки
+        addToAudit(processId, {
+            type: 'UNLOCK_NODE',
+            nodeId: String(nodeId)
+        });
+        
         console.log(`[useBoardState:unlockNode] Связали nodeId ${nodeId} с processId ${processId} для операции разблокировки`);
         
         pendingNodeUpdatesRef.current.delete(nodeId);
         
         return processId;
-    }, [publishWithProcessId]);
+    }, [publishWithProcessId, addToAudit, setNodes]);
 
     const handleNodeResizeStart = useCallback((nodeId) => {
         console.log("НАЧАЛО ИЗМЕНЕНИЯ РАЗМЕРА УЗЛА", nodeId);
         
         // Запрашиваем блокировку узла перед началом изменения размера
-        lockNode(nodeId);
+        sendServerLockNode(nodeId);
         
         // Отмечаем узел как ожидающий блокировки
         setNodes(prevNodes =>
@@ -288,7 +341,7 @@ export const useBoardState = ({ publish, connected }) => {
                 };
             })
         );
-    }, [setNodes, lockNode]);
+    }, [setNodes, sendServerLockNode]);
     
     const handleNodeResize = useCallback((nodeId, newSize) => {
         console.log("ИЗМЕНЕНИЕ РАЗМЕРА УЗЛА", nodeId, newSize);
@@ -330,11 +383,11 @@ export const useBoardState = ({ publish, connected }) => {
             // Отправляем обновления размеров заблокированного узла
             const item = nodeToItem(updatedNode);
             console.log("Обновленный элемент", item);
-            updateLockedNode(item, "geometry");
+            sendServerUpdateLockedNode(item, "geometry");
             
             return prevNodes.map(n => String(n.id) === String(nodeId) ? updatedNode : n);
         });
-    }, [setNodes, updateLockedNode]);
+    }, [setNodes, sendServerUpdateLockedNode]);
     
     const handleNodeResizeEnd = useCallback((nodeId) => {
         console.log("ЗАВЕРШЕНИЕ ИЗМЕНЕНИЯ РАЗМЕРА УЗЛА", nodeId);
@@ -368,16 +421,16 @@ export const useBoardState = ({ publish, connected }) => {
                 }
             };
 
-            updateLockedNode.flush();
+            sendServerUpdateLockedNode.flush();
             
             setTimeout(() => {
                 console.log("Отправили финальную разблокировку после изменения размера");
-                unlockNode(nodeId);
+                sendServerUnlockNode(nodeId);
             }, 10);
             
             return prevNodes.map(n => String(n.id) === String(nodeId) ? updatedNode : n);
         });
-    }, [setNodes, publishWithProcessId, unlockNode, updateLockedNode]);
+    }, [setNodes, publishWithProcessId, sendServerUnlockNode, sendServerUpdateLockedNode]);
 
     const attachNodeHandlers = useCallback((node, handlers = {}) => {
         const isLockedByOther = node.data?.isLocked && node.data?.lockedBy !== "me";
@@ -435,12 +488,23 @@ export const useBoardState = ({ publish, connected }) => {
             // Связываем processId с элементом
             processIdMapRef.current.set(String(id), processId);
             
+            // Добавляем в аудит операцию изменения метки
+            addToAudit(processId, {
+                type: 'UPDATE_NODE_LABEL',
+                nodeId: String(id),
+                previousState: currentNode,
+                newLabel: newLabel,
+                updatedNode: updatedNode
+            });
+            
+            console.log(`[useBoardState:handleNodeLabelChange] Связали nodeId ${id} с processId ${processId} для операции изменения метки`);
+            
             // Обновляем локально
             const updatedNodes = [...prevNodes];
             updatedNodes[nodeIndex] = nodeWithHandlers;
             return updatedNodes;
         });
-    }, [setNodes, publishWithProcessId, attachNodeHandlers, getNodeHandlers]);
+    }, [setNodes, publishWithProcessId, attachNodeHandlers, getNodeHandlers, addToAudit]);
 
     const handleNodeStyleChange = useCallback((id, newStyle) => {
         setNodes((prevNodes) => {
@@ -475,14 +539,75 @@ export const useBoardState = ({ publish, connected }) => {
             // Связываем processId с элементом
             processIdMapRef.current.set(String(id), processId);
             
+            // Добавляем в аудит операцию изменения стиля
+            addToAudit(processId, {
+                type: 'UPDATE_NODE_STYLE',
+                nodeId: String(id),
+                previousState: currentNode,
+                newStyle: newStyle,
+                updatedNode: updatedNode
+            });
+            
+            console.log(`[useBoardState:handleNodeStyleChange] Связали nodeId ${id} с processId ${processId} для операции изменения стиля`);
+            
             // Обновляем локально
             const updatedNodes = [...prevNodes];
             updatedNodes[nodeIndex] = nodeWithHandlers;
             return updatedNodes;
         });
-    }, [setNodes, publishWithProcessId, attachNodeHandlers, getNodeHandlers]);
+    }, [setNodes, publishWithProcessId, attachNodeHandlers, getNodeHandlers, addToAudit]);
 
-    const handleServerNodeUpdate = useCallback((item, type) => {
+    // Функция для обновления свойств data узла (например, тип фигуры)
+    const handleNodeDataChange = useCallback((id, dataChanges) => {
+        setNodes((prevNodes) => {
+            const nodeIndex = prevNodes.findIndex(n => String(n.id) === String(id));
+            if (nodeIndex === -1) return prevNodes;
+            
+            const currentNode = prevNodes[nodeIndex];
+            
+            // Сохраняем предыдущее состояние
+            prevStatesMapRef.current.set(String(id), currentNode);
+            
+            // Обновляем узел
+            const updatedNode = {
+                ...currentNode,
+                shape: dataChanges.shape || currentNode.shape, // Обновляем shape на уровне узла
+                data: {
+                    ...currentNode.data,
+                    ...dataChanges, // Добавляем все изменения data
+                }
+            };
+            
+            const nodeWithHandlers = attachNodeHandlers(updatedNode, getNodeHandlers());
+            
+            // Подготавливаем данные для отправки
+            const payload = nodeToItem(updatedNode);
+            
+            // Отправляем данные на сервер
+            const processId = publishWithProcessId('/app/items/update', payload);
+            
+            // Связываем processId с элементом
+            processIdMapRef.current.set(String(id), processId);
+            
+            // Добавляем в аудит операцию изменения данных
+            addToAudit(processId, {
+                type: 'UPDATE_NODE_DATA',
+                nodeId: String(id),
+                previousState: currentNode,
+                newData: dataChanges,
+                updatedNode: updatedNode
+            });
+            
+            console.log(`[useBoardState:handleNodeDataChange] Связали nodeId ${id} с processId ${processId} для операции изменения данных`);
+            
+            // Обновляем локально
+            const updatedNodes = [...prevNodes];
+            updatedNodes[nodeIndex] = nodeWithHandlers;
+            return updatedNodes;
+        });
+    }, [setNodes, publishWithProcessId, attachNodeHandlers, getNodeHandlers, addToAudit]);
+
+    const processServerNodeUpdate = useCallback((item, type) => {
         const newNode = itemToNode(item, userLogin);
         console.log(newNode.position);
         const nodeId = newNode.id;
@@ -565,6 +690,9 @@ export const useBoardState = ({ publish, connected }) => {
             console.log("nodeLocalPos", node.position);
             console.log("nodePos", absolutePosition);
 
+            // Сохраняем предыдущее состояние узла перед отсоединением
+            prevStatesMapRef.current.set(String(nodeId), node);
+
             const updatedNode = {
                 ...node,
                 parentId: undefined,
@@ -582,15 +710,30 @@ export const useBoardState = ({ publish, connected }) => {
                 parentId: -1
             });
             console.log('payload immediate', payload);
-            publishWithProcessId('/app/items/update', payload);
+            
+            // Отправляем запрос на сервер и получаем processId
+            const processId = publishWithProcessId('/app/items/update', payload);
+            
+            // Связываем processId с элементом
+            processIdMapRef.current.set(String(nodeId), processId);
+            
+            // Добавляем в аудит операцию отсоединения
+            addToAudit(processId, {
+                type: 'DETACH_NODE',
+                nodeId: String(nodeId),
+                previousState: node,
+                currentState: updatedNode
+            });
+            
+            console.log(`[useBoardState:detachNodeFromParentFrame] Связали nodeId ${nodeId} с processId ${processId} для операции отсоединения от родителя`);
 
             return sortNodesWithParentsFirst(
                 prev.map(n => String(n.id) === String(nodeId) ? updatedNode : n)
             );
         });
-    }, [setNodes, publishWithProcessId]);
+    }, [setNodes, publishWithProcessId, addToAudit]);
 
-    const handleNodeLocked = useCallback((lockData) => {
+    const processServerNodeLocked = useCallback((lockData) => {
         console.log("[useBoardState:handleNodeLocked] Получено событие блокировки узла:", lockData);
         
         // Проверяем статус блокировки
@@ -663,7 +806,7 @@ export const useBoardState = ({ publish, connected }) => {
         }
     }, [setNodes]);
 
-    const handleNodeUnlocked = useCallback((unlockData) => {
+    const processServerNodeUnlocked = useCallback((unlockData) => {
         console.log("[useBoardState:handleNodeUnlocked] Узел разблокирован:", unlockData);
         
         setNodes(prevNodes =>
@@ -691,7 +834,7 @@ export const useBoardState = ({ publish, connected }) => {
         );
     }, [setNodes]);
 
-    const handleLockedNodeUpdate = useCallback((updateData) => {
+    const processServerLockedNodeUpdate = useCallback((updateData) => {
         const { id, position, measured } = itemToNode(updateData);
         console.log("[useBoardState:handleLockedNodeUpdate]", updateData);
         // console.log("[useBoardState:handleLockedNodeUpdate] id", id);
@@ -759,7 +902,7 @@ export const useBoardState = ({ publish, connected }) => {
         });
     }, [setNodes]);
 
-    const handleServerNodeDelete = useCallback((nodeId) => {
+    const processServerNodeDelete = useCallback((nodeId) => {
         // Если узел удален локально, игнорируем WS-обновление
         if (pendingNodeUpdatesRef.current.has(nodeId)) {
             pendingNodeUpdatesRef.current.delete(nodeId);
@@ -788,7 +931,7 @@ export const useBoardState = ({ publish, connected }) => {
         );
     }, [setNodes]);
 
-    const createNodeOnServer = useCallback((boardIdForNode, type, position) => {
+    const sendServerCreateNode = useCallback((boardIdForNode, type, position) => {
         const { data, style, width, height } = getDefaultItem(type);
         
         // Генерируем временный ID
@@ -842,14 +985,24 @@ export const useBoardState = ({ publish, connected }) => {
         // Связываем processId с элементом
         processIdMapRef.current.set(tempId, processId);
         
+        // Добавляем в аудит операцию создания узла
+        addToAudit(processId, {
+            type: 'CREATE_NODE',
+            tempId: tempId,
+            nodeData: newNode,
+            payload: payload
+        });
+        
+        console.log(`[useBoardState:createNodeOnServer] Связали tempId ${tempId} с processId ${processId} для операции создания узла`);
+        
         return tempId;
-    }, [publishWithProcessId, attachNodeHandlers, getNodeHandlers, setNodes]);
+    }, [publishWithProcessId, attachNodeHandlers, getNodeHandlers, setNodes, addToAudit]);
 
     const handleNodeDragStart = useCallback((event, node) => {
         console.log("[useBoardState:handleNodeDragStart] НАЧАЛО ПЕРЕТАСКИВАНИЯ УЗЛА", node.id);
         
         // Запрашиваем блокировку узла перед началом перетаскивания
-        lockNode(node.id);
+        sendServerLockNode(node.id);
         
         // Отмечаем узел как ожидающий блокировки
         setNodes(prevNodes =>
@@ -867,7 +1020,7 @@ export const useBoardState = ({ publish, connected }) => {
                 return n;
             })
         );
-    }, [setNodes, lockNode]);
+    }, [setNodes, sendServerLockNode]);
 
     const checkRectIntersection = (rect1, rect2) => {
         return (
@@ -905,8 +1058,8 @@ export const useBoardState = ({ publish, connected }) => {
         });
         console.log("[useBoardState:handleNodeDrag]", draggedNode.position);
 
-        updateLockedNode(item, "position");
-    }, [setNodes, updateLockedNode]);
+        sendServerUpdateLockedNode(item, "position");
+    }, [setNodes, sendServerUpdateLockedNode]);
 
     const handleNodeDragEnd = useCallback((event, draggedNode) => {
         const nodeId = draggedNode.id;
@@ -1057,7 +1210,29 @@ export const useBoardState = ({ publish, connected }) => {
 
                     const payload = nodeToItem(updatedNode);
                     console.log('[useBoardState:handleNodeDragEnd] Отправляем запрос на обновление на сервер:', payload);
-                    publishWithProcessId('/app/items/update', payload);
+                    
+                    // Сохраняем предыдущее состояние узла перед обновлением
+                    const draggedNode = nodes.find(n => String(n.id) === String(nodeId));
+                    if (draggedNode) {
+                        prevStatesMapRef.current.set(String(nodeId), draggedNode);
+                    }
+                    
+                    // Отправляем запрос на сервер
+                    const processId = publishWithProcessId('/app/items/update', payload);
+                    
+                    // Связываем processId с элементом
+                    processIdMapRef.current.set(String(nodeId), processId);
+                    
+                    // Добавляем в аудит операцию обновления позиции и родителя
+                    addToAudit(processId, {
+                        type: 'UPDATE_NODE_PARENT',
+                        nodeId: String(nodeId),
+                        previousState: draggedNode,
+                        updatedNode: updatedNode,
+                        newParentId: String(targetFrame.id)
+                    });
+                    
+                    console.log(`[useBoardState:handleNodeDragEnd] Связали nodeId ${nodeId} с processId ${processId} для операции обновления позиции и родителя`);
                 }
             }
 
@@ -1070,16 +1245,16 @@ export const useBoardState = ({ publish, connected }) => {
 
             setTimeout(() => {
                 console.log("[useBoardState:handleNodeDragEnd] Отправляем команду разблокировки узла:", nodeId);
-                unlockNode(nodeId);
+                sendServerUnlockNode(nodeId);
             }, 100);
         } else {
             console.log("[useBoardState:handleNodeDragEnd] Узел не найден в текущем состоянии, разблокируем:", nodeId);
-            unlockNode(nodeId);
+            sendServerUnlockNode(nodeId);
         }
         
         lastDraggedNodeRef.current = nodeId;
         console.log("[useBoardState:handleNodeDragEnd] Сохранен последний перетаскиваемый узел:", nodeId);
-    }, [nodes, setNodes, unlockNode, publishWithProcessId]);
+    }, [nodes, setNodes, sendServerUnlockNode, publishWithProcessId, addToAudit]);
 
     const calculateNodeAbsolutePosition = (targetNode, allNodes) => {
         const nodeMap = new Map(allNodes.map(n => [n.id, n]));
@@ -1113,10 +1288,15 @@ export const useBoardState = ({ publish, connected }) => {
         return computePos(targetNode);
     };
 
-    const handleDelete = useCallback((nodesToDelete, edgesToDelete) => {
+    const sendServerDelete = useCallback((itemsToDelete) => {
+        const nodesToDelete = itemsToDelete.nodes || [];
+        const edgesToDelete = itemsToDelete.edges || [];
         console.log("[useBoardState:handleDeleteItems] Удаление элементов:", { nodes: nodesToDelete, edges: edgesToDelete });
-        
+        console.log(JSON.stringify(nodesToDelete));
+        console.log(JSON.stringify(edgesToDelete));
+        console.log(edgesToDelete.length > 0);
         if (edgesToDelete && edgesToDelete.length > 0) {
+            console.log("ПРОВЕРКА")
             edgesToDelete.forEach(edge => {
                 const connectorId = String(edge.id);
                 if (connectorId) {
@@ -1128,6 +1308,15 @@ export const useBoardState = ({ publish, connected }) => {
                     
                     // Связываем processId с соединением
                     processIdMapRef.current.set(connectorId, processId);
+                    
+                    // Добавляем в аудит операцию удаления соединения
+                    addToAudit(processId, {
+                        type: 'DELETE_CONNECTOR',
+                        connectorId: connectorId,
+                        connectionData: edge
+                    });
+                    
+                    console.log(`[useBoardState:handleDelete] Связали connectorId ${connectorId} с processId ${processId} для операции удаления соединения`);
                 }
             });
 
@@ -1161,6 +1350,16 @@ export const useBoardState = ({ publish, connected }) => {
                     
                     // Связываем processId с элементом
                     processIdMapRef.current.set(nodeId, processId);
+                    
+                    // Добавляем в аудит операцию удаления узла
+                    addToAudit(processId, {
+                        type: 'DELETE_NODE',
+                        nodeId: nodeId,
+                        nodeData: node,
+                        connections: relatedEdges.length > 0 ? relatedEdges : undefined
+                    });
+                    
+                    console.log(`[useBoardState:handleDelete] Связали nodeId ${nodeId} с processId ${processId} для операции удаления узла`);
                 }
             });
             
@@ -1179,9 +1378,9 @@ export const useBoardState = ({ publish, connected }) => {
         }
         
         return { nodes, edges };
-    }, [publishWithProcessId, setNodes, setEdges, edges]);
+    }, [publishWithProcessId, setNodes, setEdges, edges, addToAudit]);
 
-    const handleServerConnectionUpdate = useCallback((connectorRs, type) => {
+    const processServerConnectionUpdate = useCallback((connectorRs, type) => {
         const connectorId = parseInt(connectorRs.id, 10);
         
         setEdges((prevEdges) => {
@@ -1204,7 +1403,7 @@ export const useBoardState = ({ publish, connected }) => {
         });
     }, [setEdges, transformConnectorToEdge]);
 
-    const handleServerConnectionDelete = useCallback((connectorId) => {
+    const processServerConnectionDelete = useCallback((connectorId) => {
         if (pendingConnectorUpdatesRef.current.has(connectorId)) {
             pendingConnectorUpdatesRef.current.delete(connectorId);
             return;
@@ -1213,7 +1412,7 @@ export const useBoardState = ({ publish, connected }) => {
         setEdges((prevEdges) => prevEdges.filter((e) => String(e.id) !== String(connectorId)));
     }, [setEdges]);
 
-    const createConnectionOnServer = useCallback((params) => {
+    const sendServerCreateConnection = useCallback((params) => {
         // Генерируем временный ID
         const tempId = `temp-conn-${uuidv4()}`;
         
@@ -1246,14 +1445,34 @@ export const useBoardState = ({ publish, connected }) => {
         // Связываем processId с соединением
         processIdMapRef.current.set(tempId, processId);
         
+        // Добавляем в аудит операцию создания соединения
+        addToAudit(processId, {
+            type: 'CREATE_CONNECTOR',
+            tempId: tempId,
+            connectionData: newEdge,
+            payload: payload
+        });
+        
+        console.log(`[useBoardState:createConnectionOnServer] Связали tempId ${tempId} с processId ${processId} для операции создания соединения`);
+        
         return tempId;
-    }, [publishWithProcessId, setEdges]);
+    }, [publishWithProcessId, setEdges, addToAudit]);
 
-    const requestBoardDataFromServer = useCallback((targetBoardId) => {
-        publishWithProcessId('/app/board/load', targetBoardId);
-    }, [publishWithProcessId]);
+    const sendServerRequestBoardData = useCallback((targetBoardId) => {
+        const processId = publishWithProcessId('/app/board/load', targetBoardId);
+        
+        // Добавляем в аудит операцию загрузки доски
+        addToAudit(processId, {
+            type: 'LOAD_BOARD',
+            boardId: targetBoardId
+        });
+        
+        console.log(`[useBoardState:requestBoardDataFromServer] Связали boardId ${targetBoardId} с processId ${processId} для операции загрузки доски`);
+        
+        return processId;
+    }, [publishWithProcessId, addToAudit]);
 
-    const initializeBoardFromServerData = useCallback((fullData) => {
+    const processServerBoardData = useCallback((fullData) => {
         const { items = [], connectors = [] } = fullData;
         
         const parsedItems = items.map((raw) => ItemRs.fromServer(raw));
@@ -1271,9 +1490,9 @@ export const useBoardState = ({ publish, connected }) => {
         });
         
         const loadedEdges = connectors.map((conn) => ({
-            id: conn.id,
-            source: conn.startItem,
-            target: conn.endItem,
+            id: String(conn.id),
+            source: String(conn.startItem),
+            target: String(conn.endItem),
             type: 'floating',
             label: conn.content,
             data: { style: conn.style || {} },
@@ -1284,9 +1503,9 @@ export const useBoardState = ({ publish, connected }) => {
     }, [setNodes, setEdges, attachNodeHandlers, getNodeHandlers]);
 
     const handleConnect = useCallback((params) => {
-        createConnectionOnServer(params);
+        sendServerCreateConnection(params);
         setEdges((prevEdges) => addEdge({ ...params, type: 'floating' }, prevEdges));
-    }, [setEdges, createConnectionOnServer]);
+    }, [setEdges, sendServerCreateConnection]);
 
     const handleEdgeUpdate = useCallback((oldEdge, newConnection) => {
         setEdges((prevEdges) => applyEdgeChanges(oldEdge, newConnection, prevEdges));
@@ -1299,6 +1518,7 @@ export const useBoardState = ({ publish, connected }) => {
         return {
             onLabelChange: handleNodeLabelChange,
             onStyleChange: handleNodeStyleChange,
+            onDataChange: handleNodeDataChange,
             detachFromParent: detachNodeFromParentFrame,
             onResizeStart: handleNodeResizeStart,
             onResize: handleNodeResize,
@@ -1307,6 +1527,7 @@ export const useBoardState = ({ publish, connected }) => {
     }, [
         handleNodeLabelChange,
         handleNodeStyleChange,
+        handleNodeDataChange,
         detachNodeFromParentFrame,
         handleNodeResizeStart,
         handleNodeResize,
@@ -1328,6 +1549,9 @@ export const useBoardState = ({ publish, connected }) => {
             console.warn(`Не найден временный элемент для processId: ${processId}`);
             return;
         }
+        
+        // Удаляем запись из аудита при успешном подтверждении
+        removeFromAudit(processId);
         
         // Сохраняем связь временного ID с реальным ID
         tempIdToRealIdMapRef.current.set(tempNodeId, newItem.id);
@@ -1416,6 +1640,9 @@ export const useBoardState = ({ publish, connected }) => {
             return;
         }
         
+        // Удаляем запись из аудита при успешном подтверждении
+        removeFromAudit(processId);
+        
         // Удаляем предыдущее состояние
         prevStatesMapRef.current.delete(nodeId);
         
@@ -1488,13 +1715,16 @@ export const useBoardState = ({ publish, connected }) => {
     const handleItemDeleteConfirmed = useCallback((processId) => {
         console.log(`[useBoardState:handleItemDeleteConfirmation] Подтверждено удаление элемента: ${processId}`);
         
+        // Удаляем запись из аудита при успешном подтверждении
+        removeFromAudit(processId);
+        
         // Очищаем запись об удаленном элементе
         const nodeId = getNodeIdByProcessId(processId);
         if (nodeId) {
             deletedItemsMapRef.current.delete(nodeId);
             processIdMapRef.current.delete(nodeId);
         }
-    }, [getNodeIdByProcessId]);
+    }, [getNodeIdByProcessId, removeFromAudit]);
 
     // Обработчик отказа в удалении элемента
     const handleItemDeleteFailed = useCallback((processId, error) => {
@@ -1542,6 +1772,9 @@ export const useBoardState = ({ publish, connected }) => {
         const tempConnectorId = getNodeIdByProcessId(processId);
         if (!tempConnectorId) return;
         
+        // Удаляем запись из аудита при успешном подтверждении
+        removeFromAudit(processId);
+        
         setEdges(prevEdges => {
             return prevEdges.map(edge => {
                 if (String(edge.id) === String(tempConnectorId)) {
@@ -1587,6 +1820,9 @@ export const useBoardState = ({ publish, connected }) => {
             console.warn(`Не найден элемент для блокировки по processId: ${processId}`);
             return;
         }
+        
+        // Удаляем запись из аудита при успешном подтверждении
+        removeFromAudit(processId);
 
         // Отмечаем, что блокировка подтверждена
         setNodes(prevNodes => {
@@ -1613,10 +1849,20 @@ export const useBoardState = ({ publish, connected }) => {
     const handleLockedItemUpdateConfirmed = useCallback((processId, updatedData) => {
         console.log(`[useBoardState:handleLockedNodeUpdatedConfirmation] Подтверждено обновление заблокированного элемента: ${processId}`, updatedData);
         
+        // Удаляем запись из аудита при успешном подтверждении
+        removeFromAudit(processId);
+        
+        // Находим ID элемента по processId
+        const nodeId = getNodeIdByProcessId(processId);
+        if (nodeId) {
+            // Удаляем предыдущее состояние
+            prevStatesMapRef.current.delete(nodeId);
+        }
+        
         // Здесь можно реализовать дополнительную логику, если нужно
         // Обычно специальной обработки не требуется, так как изменения
         // уже применены оптимистично
-    }, []);
+    }, [removeFromAudit, getNodeIdByProcessId]);
 
     // Обработчик подтверждения разблокировки элемента
     const handleItemUnlockConfirmed = useCallback((processId, unlockData) => {
@@ -1628,6 +1874,9 @@ export const useBoardState = ({ publish, connected }) => {
             console.warn(`Не найден элемент для разблокировки по processId: ${processId}`);
             return;
         }
+        
+        // Удаляем запись из аудита при успешном подтверждении
+        removeFromAudit(processId);
 
         // Отмечаем, что элемент разблокирован
         setNodes(prevNodes => {
@@ -1767,8 +2016,8 @@ export const useBoardState = ({ publish, connected }) => {
         prevStatesMapRef.current.delete(String(nodeId));
     }, [getNodeIdByProcessId, setNodes, userLogin]);
 
-    // Обработчик конфирмации от сервера
-    const handleServerConfirmation = useCallback((type, processId, data) => {
+    // Обработчик подтверждения от сервера
+    const processServerConfirmation = useCallback((type, processId, data) => {
         switch (type) {
             case 'CREATE_ITEM_CONFIRMED':
                 handleItemCreationConfirmed(processId, data);
@@ -1807,52 +2056,300 @@ export const useBoardState = ({ publish, connected }) => {
         handleConnectorCreationConfirmed,
         handleItemLockConfirmed,
         handleItemUnlockConfirmed,
-        handleLockedItemUpdateConfirmed
+        handleLockedItemUpdateConfirmed,
+        removeFromAudit
     ]);
+
+    // Функция для выполнения точечного отката изменений в зависимости от типа операции
+    const rollbackOperation = useCallback((processId) => {
+        // Получаем информацию об операции из аудита
+        const auditRecord = operationsAuditRef.current.get(processId);
+        if (!auditRecord) {
+            console.warn(`[useBoardState:rollbackOperation] Не найдена запись в аудите для processId: ${processId}`);
+            return false;
+        }
+
+        console.log(`[useBoardState:rollbackOperation] Выполняем откат операции: ${processId}`, auditRecord);
+
+        const { type, nodeId, previousState } = auditRecord;
+
+        switch (type) {
+            case 'UPDATE_NODE_LABEL':
+                // Откат только изменения метки
+                setNodes(prevNodes =>
+                    prevNodes.map(node => {
+                        if (String(node.id) === String(nodeId)) {
+                            return {
+                                ...node,
+                                data: {
+                                    ...node.data,
+                                    label: previousState.data.label
+                                }
+                            };
+                        }
+                        return node;
+                    })
+                );
+                break;
+
+            case 'UPDATE_NODE_STYLE':
+                // Откат только изменений стиля
+                setNodes(prevNodes =>
+                    prevNodes.map(node => {
+                        if (String(node.id) === String(nodeId)) {
+                            return {
+                                ...node,
+                                data: {
+                                    ...node.data,
+                                    style: previousState.data.style || {}
+                                }
+                            };
+                        }
+                        return node;
+                    })
+                );
+                break;
+
+            case 'UPDATE_NODE_PARENT':
+                // Откат изменения родителя и позиции
+                setNodes(prevNodes =>
+                    prevNodes.map(node => {
+                        if (String(node.id) === String(nodeId)) {
+                            return {
+                                ...node,
+                                parentId: previousState.parentId,
+                                extent: previousState.extent,
+                                position: previousState.position,
+                                data: {
+                                    ...node.data,
+                                    parentId: previousState.data.parentId,
+                                    position: previousState.position
+                                }
+                            };
+                        }
+                        return node;
+                    })
+                );
+                break;
+
+            case 'UPDATE_LOCKED_NODE':
+                // Откат изменения заблокированного узла в зависимости от типа обновления
+                console.log("ПРОВЕРКА")
+                if (auditRecord.updateType === "geometry") {
+                    console.log("ОТКАТ")
+                    setNodes(prevNodes =>
+                        prevNodes.map(node => {
+                            if (String(node.id) === String(nodeId)) {
+                                return {
+                                    ...node,
+                                    measured: previousState.measured,
+                                    width: previousState.width,
+                                    height: previousState.height,
+                                    data: {
+                                        ...node.data,
+                                        geometry: previousState.data.geometry
+                                    }
+                                };
+                            }
+                            return node;
+                        })
+                    );
+                } else if (auditRecord.updateType === "position") {
+                    // Откат только позиции
+                    setNodes(prevNodes =>
+                        prevNodes.map(node => {
+                            if (String(node.id) === String(nodeId)) {
+                                return {
+                                    ...node,
+                                    position: previousState.position,
+                                    data: {
+                                        ...node.data,
+                                        position: previousState.position
+                                    }
+                                };
+                            }
+                            return node;
+                        })
+                    );
+                }
+                break;
+
+            case 'DETACH_NODE':
+                // Восстановление связи с родителем
+                setNodes(prevNodes =>
+                    prevNodes.map(node => {
+                        if (String(node.id) === String(nodeId)) {
+                            return {
+                                ...node,
+                                parentId: previousState.parentId,
+                                extent: previousState.extent,
+                                position: previousState.position,
+                                data: {
+                                    ...node.data,
+                                    parentId: previousState.data.parentId,
+                                    position: previousState.position
+                                }
+                            };
+                        }
+                        return node;
+                    })
+                );
+                break;
+
+            case 'CREATE_NODE':
+                // Удаление созданного узла
+                console.log('CREATE_NODE');
+                setNodes(prevNodes =>
+                    prevNodes.filter(node => String(node.id) !== String(auditRecord.tempId))
+                );
+                break;
+
+            case 'CREATE_CONNECTOR':
+                // Удаление созданного соединения
+                setEdges(prevEdges =>
+                    prevEdges.filter(edge => String(edge.id) !== String(auditRecord.tempId))
+                );
+                break;
+
+            case 'DELETE_NODE':
+                // Восстановление удаленного узла
+                if (previousState) {
+                    setNodes(prevNodes => {
+                        const nodeExists = prevNodes.some(n => String(n.id) === String(nodeId));
+                        if (nodeExists) return prevNodes;
+                        return [...prevNodes, attachNodeHandlers(previousState, getNodeHandlers())];
+                    });
+
+                    // Восстановление связанных соединений
+                    if (auditRecord.connections) {
+                        setEdges(prevEdges => [...prevEdges, ...auditRecord.connections]);
+                    }
+                }
+                break;
+
+            case 'DELETE_CONNECTOR':
+                // Восстановление удаленного соединения
+                if (auditRecord.connectionData) {
+                    setEdges(prevEdges => {
+                        const edgeExists = prevEdges.some(e => String(e.id) === String(auditRecord.connectorId));
+                        if (edgeExists) return prevEdges;
+                        return [...prevEdges, auditRecord.connectionData];
+                    });
+                }
+                break;
+
+            case 'UPDATE_NODE_DATA':
+                // Откат изменений data (включая тип фигуры)
+                setNodes(prevNodes =>
+                    prevNodes.map(node => {
+                        if (String(node.id) === String(nodeId)) {
+                            return {
+                                ...node,
+                                shape: previousState.shape,
+                                data: {
+                                    ...node.data,
+                                    ...previousState.data,
+                                    functions: node.data.functions // Сохраняем функции
+                                }
+                            };
+                        }
+                        return node;
+                    })
+                );
+                break;
+
+            default:
+                console.warn(`[useBoardState:rollbackOperation] Неизвестный тип операции: ${type}`);
+                return false;
+        }
+
+        // Удаляем запись из аудита после отката
+        removeFromAudit(processId);
+        return true;
+    }, [setNodes, setEdges, attachNodeHandlers, getNodeHandlers, removeFromAudit]);
 
     // Обработчик ошибок от сервера
-    const handleServerError = useCallback((type, processId, error) => {
-        switch (type) {
-            case 'CREATE_ITEM_FAILED':
-                handleItemCreationFailed(processId, error);
-                break;
-            case 'UPDATE_ITEM_FAILED':
-                handleItemUpdateFailed(processId, error);
-                break;
-            case 'DELETE_ITEM_FAILED':
-                handleItemDeleteFailed(processId, error);
-                break;
-            case 'CREATE_CONNECTOR_FAILED':
-                handleConnectorCreationFailed(processId, error);
-                break;
-            case 'UPDATE_CONNECTOR_FAILED':
-                // Аналогично handleItemUpdateFailed
-                break;
-            case 'DELETE_CONNECTOR_FAILED':
-                // Аналогично handleItemDeleteFailed
-                break;
-            case 'ITEM_LOCK_FAILED':
-                handleItemLockFailed(processId, error);
-                break;
-            case 'ITEM_UNLOCK_FAILED':
-                handleItemUnlockFailed(processId, error);
-                break;
-            case 'LOCKED_ITEM_UPDATE_FAILED':
-                handleLockedItemUpdateFailed(processId, error);
-                break;
-            default:
-                console.warn(`Неизвестный тип ошибки: ${type}`);
+    const processServerError = useCallback((type, processId, error) => {
+        console.error(`[useBoardState:processServerError] Получена ошибка от сервера: ${type}, processId: ${processId}`, error);
+        
+        // Для контроля частоты уведомлений используем глобальный ref
+        const currentTime = Date.now();
+        
+        // Функция для проверки, следует ли показывать уведомление
+        const shouldShowNotification = (errorType) => {
+            // Если такой ошибки не было или прошло достаточно времени, показываем уведомление
+            if (!lastErrorsRef.current[errorType] || (currentTime - lastErrorsRef.current[errorType]) > 2000) {
+                lastErrorsRef.current[errorType] = currentTime;
+                return true;
+            }
+            return false;
+        };
+        
+        // Проверяем, есть ли информация об операции в аудите
+        const auditRecord = operationsAuditRef.current.get(processId);
+
+        // Используем rollbackOperation для отката изменений
+        const rollbackSuccess = rollbackOperation(processId);
+        
+        // Показываем сообщение пользователю в зависимости от типа ошибки
+        if (rollbackSuccess) {
+            // Группируем ошибки по типам для предотвращения спама уведомлений
+            switch (type) {
+                case 'CREATE_ITEM_FAILED':
+                    if (shouldShowNotification('create_item')) {
+                        message.error('Не удалось создать элемент. Операция отменена.');
+                    }
+                    break;
+                case 'UPDATE_ITEM_FAILED':
+                    if (shouldShowNotification('update_item')) {
+                        message.error('Не удалось обновить элемент. Изменения отменены.');
+                    }
+                    break;
+                case 'DELETE_ITEM_FAILED':
+                    if (shouldShowNotification('delete_item')) {
+                        message.error('Не удалось удалить элемент. Операция отменена.');
+                    }
+                    break;
+                case 'CREATE_CONNECTOR_FAILED':
+                    if (shouldShowNotification('create_connector')) {
+                        message.error('Не удалось создать соединение. Операция отменена.');
+                    }
+                    break;
+                case 'ITEM_LOCK_FAILED':
+                    if (shouldShowNotification('lock_item')) {
+                        message.error('Не удалось заблокировать элемент. Возможно, он уже заблокирован другим пользователем.');
+                    }
+                    break;
+                case 'ITEM_UNLOCK_FAILED':
+                    if (shouldShowNotification('unlock_item')) {
+                        message.error('Не удалось разблокировать элемент. Элемент останется заблокированным.');
+                    }
+                    break;
+                case 'LOCKED_ITEM_UPDATE_FAILED':
+                    if (shouldShowNotification('update_locked_item')) {
+                        message.error('Не удалось обновить заблокированный элемент. Изменения отменены.');
+                    }
+                    break;
+                default:
+                    if (shouldShowNotification('unknown')) {
+                        message.error(`Произошла ошибка: ${error?.message || 'Неизвестная ошибка'}`);
+                    }
+            }
+        } else {
+            // Если откат не удался, показываем общее сообщение об ошибке
+            if (shouldShowNotification('rollback_failed')) {
+                message.error('Произошла ошибка, не удалось отменить изменения.');
+                console.error('[useBoardState:processServerError] Не удалось выполнить откат операции:', auditRecord);
+            }
         }
     }, [
-        handleItemCreationFailed,
-        handleItemUpdateFailed,
-        handleItemDeleteFailed,
-        handleConnectorCreationFailed,
-        handleItemLockFailed,
-        handleItemUnlockFailed,
-        handleLockedItemUpdateFailed
+        getNodeIdByProcessId, 
+        setNodes, 
+        setEdges, 
+        rollbackOperation
     ]);
 
+    // В экспорте оставляем только используемые функции
     return {
         nodes,
         edges,
@@ -1864,21 +2361,22 @@ export const useBoardState = ({ publish, connected }) => {
         onNodeDragStart: handleNodeDragStart,
         onNodeDrag: handleNodeDrag,
         onNodeDragStop: handleNodeDragEnd,
-        onDelete: handleDelete,
-        createNewNode: createNodeOnServer,
-        handleNodeUpdateFromServer: handleServerNodeUpdate,
-        handleNodeRemoveFromServer: handleServerNodeDelete,
-        handleConnectionUpdateFromServer: handleServerConnectionUpdate,
-        handleConnectionRemoveFromServer: handleServerConnectionDelete,
-        handleBoardDataFromServer: initializeBoardFromServerData,
-        loadBoardData: requestBoardDataFromServer,
-        handleNodeLocked,
-        handleNodeUnlocked,
-        handleLockedNodeUpdate,
+        onDelete: sendServerDelete,
+        createNewNode: sendServerCreateNode,
+        handleNodeUpdateFromServer: processServerNodeUpdate,
+        handleNodeRemoveFromServer: processServerNodeDelete,
+        handleConnectionUpdateFromServer: processServerConnectionUpdate,
+        handleConnectionRemoveFromServer: processServerConnectionDelete,
+        handleBoardDataFromServer: processServerBoardData,
+        loadBoardData: sendServerRequestBoardData,
+        handleNodeLocked: processServerNodeLocked,
+        handleNodeUnlocked: processServerNodeUnlocked,
+        handleLockedNodeUpdate: processServerLockedNodeUpdate,
         formatLockedByField,
         getProcessIdForNode: (nodeId) => processIdMapRef.current.get(String(nodeId)),
-        handleServerConfirmation,
-        handleServerError,
-        getTempIdByRealId
+        handleServerConfirmation: processServerConfirmation,
+        handleServerError: processServerError,
+        getTempIdByRealId,
+        rollbackOperation
     };
 };

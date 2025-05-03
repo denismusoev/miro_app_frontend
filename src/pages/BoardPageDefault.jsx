@@ -129,8 +129,7 @@ export default function BoardPageDefault() {
         onNodeDragStop,
         onNodeDrag,
         onNodeDragStart,
-        onEdgesDelete,
-        onNodesDelete,
+        onDelete,
 
         // Операции с узлами
         createNewNode,
@@ -197,8 +196,7 @@ export default function BoardPageDefault() {
                     onNodeDragStart={onNodeDragStart}
                     onNodeDrag={onNodeDrag}
                     onDropNewNode={handleDropNewNode}
-                    onEdgesDelete={onEdgesDelete}
-                    onNodesDelete={onNodesDelete}
+                    onDelete={onDelete}
                 />
                 
                 {/* Кнопка экспорта */}

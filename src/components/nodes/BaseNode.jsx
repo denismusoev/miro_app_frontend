@@ -20,6 +20,7 @@ export const BaseNode = memo(({ id, data, selected, children, positionAbsoluteX,
     // Проверяем, заблокирован ли узел
     const isLocked = data.isLocked;
     const lockedBy = data.lockedBy;
+    const waitingForLock = data.waitingForLock;
 
     // Проверка, заблокирован ли узел текущим пользователем
     const isLockedByMe = isLocked && lockedBy === "me";
@@ -180,9 +181,9 @@ export const BaseNode = memo(({ id, data, selected, children, positionAbsoluteX,
         height: selected ? 10 : 7,
         border: selected ? '2px solid #fff' : 'none',
         boxShadow: selected ? '0 2px 4px rgba(0, 0, 0, 0.15)' : 'none',
-        opacity: selected ? 1 : 0,
-        pointerEvents: selected ? 'auto' : 'none',
-    }), [selected]);
+        opacity: selected && !isLocked && !waitingForLock ? 1 : 0,
+        pointerEvents: selected && !isLocked && !waitingForLock ? 'auto' : 'none',
+    }), [selected, isLocked, waitingForLock]);
 
     // Мемоизированный стиль для отображения координат
     const coordsStyle = useMemo(() => ({
@@ -239,16 +240,16 @@ export const BaseNode = memo(({ id, data, selected, children, positionAbsoluteX,
             className={`${isEditing ? 'editing' : ''} ${isLocked ? 'node--locked' : ''} ${isLockedByMe ? 'node--locked-by-me' : ''} ${isLockedByOther ? 'node--locked-by-other' : ''}`}
         >
             {/* Индикатор блокировки */}
-            {isLocked && (
+            {isLocked && isLockedByOther && (
                 <div style={lockIndicatorStyle}>
-                    {isLockedByOther && `Занято: ${lockedBy || 'другим пользователем'}`}
+                    {`Занято: ${lockedBy || 'другим пользователем'}`}
                 </div>
             )}
 
             {/* Тулбар с заданным содержимым или стандартными кнопками */}
             <NodeToolbar
                 onDoubleClick={(e) => e.stopPropagation()}
-                isVisible={selected && (!isLocked || isLockedByMe)}
+                isVisible={selected && !isLocked && !waitingForLock}
                 position="top"
                 className="bg-white rounded shadow-sm"
                 style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '12px' }}
@@ -285,7 +286,7 @@ export const BaseNode = memo(({ id, data, selected, children, positionAbsoluteX,
                 }}
                 minHeight={40}
                 minWidth={40}
-                isVisible={selected && (!isLocked || isLockedByMe)}
+                isVisible={selected && !isLocked && !waitingForLock}
                 onResize={onResize}
                 onResizeStart={handleResizeStart}
                 onResizeEnd={handleResizeEnd}
@@ -308,12 +309,12 @@ export const BaseNode = memo(({ id, data, selected, children, positionAbsoluteX,
                 />
             )}
 
-            {/* Отображение текущих координат */}
-            {formattedCoords && (
-                <div style={coordsStyle}>
-                    {formattedCoords}
-                </div>
-            )}
+            {/*/!* Отображение текущих координат *!/*/}
+            {/*{formattedCoords && (*/}
+            {/*    <div style={coordsStyle}>*/}
+            {/*        {formattedCoords}*/}
+            {/*    </div>*/}
+            {/*)}*/}
 
             <Handle
                 type="target"
